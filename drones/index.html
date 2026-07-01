@@ -496,7 +496,7 @@ function formatRand(n){
 }
 async function fetchLivePrice(handle){
   try{
-    const res = await fetch(`https://www.ormsdirect.co.za/products/${handle}.json`, {mode:'cors'});
+    const res = await fetch(`https://www.ormsdirect.co.za/products/${handle}.json?_=${Date.now()}`, {mode:'cors', cache:'no-store'});
     if(!res.ok) return null;
     const data = await res.json();
     const variants = (data.product && data.product.variants) || [];
