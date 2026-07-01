@@ -29,8 +29,13 @@
   .orms-brand img{height:22px;width:auto;border-radius:4px;display:block}
   .orms-brand span{font-size:11px;font-weight:500;color:var(--accent)}
 
-  .freshness-bar{background:var(--amber-bg);border-bottom:1px solid var(--amber-b);padding:8px 28px;font-size:12px;color:var(--amber);display:flex;align-items:center;gap:8px;justify-content:center;text-align:center}
+  .freshness-bar{background:var(--amber-bg);border-bottom:1px solid var(--amber-b);padding:8px 28px;font-size:12px;color:var(--amber);display:flex;align-items:center;gap:8px;justify-content:center;text-align:center;transition:background .2s,color .2s,border-color .2s}
   .freshness-bar b{color:var(--text1)}
+  .freshness-bar.live{background:var(--green-bg);border-bottom-color:var(--green-b);color:var(--green)}
+  .freshness-bar.err{background:rgba(255,90,90,.1);border-bottom-color:rgba(255,90,90,.3);color:#FF6B6B}
+  .refresh-btn{background:transparent;border:1px solid currentColor;border-radius:20px;padding:2px 10px;font-size:11px;color:inherit;cursor:pointer;font-family:inherit;margin-left:4px}
+  .refresh-btn:hover{opacity:.8}
+  .refresh-btn:disabled{opacity:.5;cursor:default}
 
   main{max-width:1200px;margin:0 auto;padding:24px 20px 60px}
 
@@ -147,7 +152,7 @@
   <a class="orms-brand" href="https://www.ormsdirect.co.za" target="_blank"><img src="https://www.ormsdirect.co.za/cdn/shop/files/orms-logo-social-media.webp?v=1756726421" alt="Orms Direct logo"><span>Prices via Orms Direct</span></a>
 </header>
 
-<div class="freshness-bar">⚠ Prices manually verified on <b>17 June 2026</b> — this file does not auto-update. Click "View on Orms Direct" on any item for the current live price. Several Mobile 8P items are currently shown as Pre-Order / Sold out at Orms.</div>
+<div class="freshness-bar" id="freshnessBar">⏳ Syncing live prices from Orms Direct… <button class="refresh-btn" id="refreshBtn" onclick="syncLivePrices()" disabled>Refresh</button></div>
 
 <main><div id="app"></div></main>
 
@@ -424,7 +429,70 @@ function cardClick(id){
   render();
 }
 
+function extractHandle(url){
+  if(!url) return null;
+  const m = url.match(/\/products\/([a-z0-9-]+)/i);
+  return m ? m[1] : null;
+}
+function formatRand(n){
+  return 'R'+Math.round(n).toLocaleString('en-ZA');
+}
+async function fetchLivePrice(handle){
+  try{
+    const res = await fetch(`https://www.ormsdirect.co.za/products/${handle}.json`, {mode:'cors'});
+    if(!res.ok) return null;
+    const data = await res.json();
+    const variants = (data.product && data.product.variants) || [];
+    const prices = variants.map(v=>parseFloat(v.price)).filter(p=>!isNaN(p) && p>0);
+    if(!prices.length) return null;
+    return formatRand(Math.min(...prices));
+  } catch(e){ return null; }
+}
+async function syncLivePrices(){
+  const bar = document.getElementById('freshnessBar');
+  if(!bar) return;
+  bar.className = 'freshness-bar';
+  bar.innerHTML = '⏳ Syncing live prices from Orms Direct… <button class="refresh-btn" disabled>Refresh</button>';
+
+  let attempted = 0, updated = 0;
+  const tasks = [];
+  for(const d of GIMBALS){
+    const h = extractHandle(d.url);
+    if(h){
+      attempted++;
+      tasks.push(fetchLivePrice(h).then(p=>{ if(p){ d.price = p; updated++; } }));
+    }
+    for(const a of d.accessories||[]){
+      const ah = extractHandle(a.url);
+      if(ah){
+        attempted++;
+        tasks.push(fetchLivePrice(ah).then(p=>{ if(p){ a.price = p; updated++; } }));
+      }
+    }
+  }
+  await Promise.allSettled(tasks);
+  render();
+
+  const bar2 = document.getElementById('freshnessBar');
+  if(!bar2) return;
+  const now = new Date().toLocaleString('en-ZA', {hour:'2-digit',minute:'2-digit',day:'2-digit',month:'short'});
+  if(attempted===0){
+    bar2.className = 'freshness-bar err';
+    bar2.innerHTML = '⚠ No linked Orms product pages found to sync.';
+  } else if(updated===0){
+    bar2.className = 'freshness-bar err';
+    bar2.innerHTML = '⚠ Live price sync failed (browser blocked the request) — showing last-saved prices from <b>17 June 2026</b>. Use "View on Orms Direct" for current pricing. <button class="refresh-btn" onclick="syncLivePrices()">Retry</button>';
+  } else if(updated<attempted){
+    bar2.className = 'freshness-bar live';
+    bar2.innerHTML = `✓ Live prices synced (${updated}/${attempted}) from Orms Direct at <b>${now}</b> — some items still show last-saved prices. <button class="refresh-btn" onclick="syncLivePrices()">Refresh</button>`;
+  } else {
+    bar2.className = 'freshness-bar live';
+    bar2.innerHTML = `✓ Live prices synced from Orms Direct at <b>${now}</b>. <button class="refresh-btn" onclick="syncLivePrices()">Refresh</button>`;
+  }
+}
+
 render();
+syncLivePrices();
 </script>
 </body>
 </html>
