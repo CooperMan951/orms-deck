@@ -1,0 +1,430 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DJI Gimbal Explorer — Orms Direct</title>
+<style>
+  :root {
+    --bg:#0C1018; --surface:#131920; --card:#1A2330; --card-h:#1F2A3A;
+    --border:#263040; --border-h:#3A5070;
+    --accent:#3A9EFF; --accent-bg:rgba(58,158,255,.1); --accent-b:rgba(58,158,255,.3);
+    --green:#2ECC87; --green-bg:rgba(46,204,135,.12); --green-b:rgba(46,204,135,.3);
+    --amber:#F5A623; --amber-bg:rgba(245,166,35,.1); --amber-b:rgba(245,166,35,.3);
+    --text1:#EDF2FA; --text2:#8A9BB0; --text3:#4E6075;
+    --r:10px;
+  }
+  *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+  body{background:var(--bg);color:var(--text1);font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;font-size:14px;min-height:100vh}
+  ::-webkit-scrollbar{width:6px;height:6px} ::-webkit-scrollbar-track{background:var(--bg)} ::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px} ::-webkit-scrollbar-thumb:hover{background:var(--border-h)}
+
+  header{background:var(--surface);border-bottom:1px solid var(--border);padding:0 28px;height:58px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:10}
+  .logo{display:flex;align-items:center;gap:10px}
+  .logo-icon{width:32px;height:32px;background:var(--accent);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:18px}
+  .logo-title{font-size:15px;font-weight:600;letter-spacing:-.2px}
+  .logo-sub{font-size:11px;color:var(--text2);margin-top:1px}
+  .orms-pill{font-size:11px;font-weight:500;color:var(--accent);background:var(--accent-bg);border:1px solid var(--accent-b);padding:4px 11px;border-radius:20px}
+  .orms-brand{display:flex;align-items:center;gap:9px;text-decoration:none;background:var(--accent-bg);border:1px solid var(--accent-b);padding:5px 12px 5px 6px;border-radius:20px;transition:background .15s}
+  .orms-brand:hover{background:rgba(58,158,255,.18)}
+  .orms-brand img{height:22px;width:auto;border-radius:4px;display:block}
+  .orms-brand span{font-size:11px;font-weight:500;color:var(--accent)}
+
+  .freshness-bar{background:var(--amber-bg);border-bottom:1px solid var(--amber-b);padding:8px 28px;font-size:12px;color:var(--amber);display:flex;align-items:center;gap:8px;justify-content:center;text-align:center}
+  .freshness-bar b{color:var(--text1)}
+
+  main{max-width:1200px;margin:0 auto;padding:24px 20px 60px}
+
+  .toolbar{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-bottom:18px}
+  .cats{display:flex;gap:5px;flex-wrap:wrap}
+  .cat-btn{padding:5px 13px;border-radius:20px;border:1px solid var(--border);background:transparent;cursor:pointer;font-size:12px;color:var(--text2);font-family:inherit;transition:all .15s}
+  .cat-btn:hover{border-color:var(--border-h);color:var(--text1)}
+  .cat-btn.active{background:var(--card-h);color:var(--text1);border-color:var(--border-h)}
+  .cmp-btn{padding:6px 16px;border-radius:var(--r);border:1px solid var(--border);background:transparent;cursor:pointer;font-size:13px;color:var(--text2);font-family:inherit;white-space:nowrap;transition:all .15s}
+  .cmp-btn:hover{border-color:var(--border-h);color:var(--text1)}
+  .cmp-btn.active{border-color:var(--accent-b);color:var(--accent);background:var(--accent-bg)}
+
+  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(142px,1fr));gap:9px;margin-bottom:20px}
+  .card{background:var(--card);border:1px solid var(--border);border-radius:var(--r);padding:14px 12px;cursor:pointer;position:relative;user-select:none;transition:border-color .15s,background .15s,transform .1s}
+  .card:hover{border-color:var(--border-h);background:var(--card-h);transform:translateY(-1px)}
+  .card.viewing{border:2px solid var(--border-h);background:var(--card-h)}
+  .card.selected{border:2px solid var(--accent-b);background:var(--accent-bg)}
+  .card.dim{opacity:.4;cursor:not-allowed;transform:none!important}
+  .dot{width:8px;height:8px;border-radius:50%;display:inline-block;margin-bottom:8px}
+  .new{display:inline-block;font-size:9px;font-weight:700;background:var(--green-bg);color:var(--green);border:1px solid var(--green-b);border-radius:4px;padding:1px 5px;margin-left:5px;vertical-align:middle;letter-spacing:.4px}
+  .card-name{font-size:12.5px;font-weight:600;color:var(--text1);line-height:1.3;margin-bottom:2px}
+  .card-cat{font-size:11px;color:var(--text3);margin-bottom:6px}
+  .card-price{font-size:13px;font-weight:600;color:var(--accent)}
+  .card-combo{font-size:10.5px;color:var(--text3);margin-top:1px}
+  .sel-badge{position:absolute;top:8px;right:8px;width:20px;height:20px;border-radius:50%;background:var(--card);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:11px;color:var(--text3);transition:all .15s}
+  .sel-badge.on{background:var(--accent-bg);border-color:var(--accent-b);color:var(--accent)}
+
+  .panel{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);overflow:hidden;animation:slideIn .18s ease}
+  @keyframes slideIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+  .panel-top{padding:20px 22px 0}
+  .panel-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:16px}
+  .panel-title{font-size:19px;font-weight:700;color:var(--text1);display:flex;align-items:center;gap:8px}
+  .panel-sub{font-size:13px;color:var(--text2);margin-top:3px}
+  .price-big{font-size:24px;font-weight:700;color:var(--accent);margin-top:5px}
+  .price-sub{font-size:12px;color:var(--text3);margin-top:1px}
+  .orms-btn{display:inline-flex;align-items:center;gap:5px;margin-top:10px;padding:6px 14px;background:var(--accent-bg);border:1px solid var(--accent-b);border-radius:7px;color:var(--accent);font-size:13px;font-weight:500;text-decoration:none;transition:background .15s}
+  .orms-btn:hover{background:rgba(58,158,255,.18)}
+  .close-btn{background:transparent;border:1px solid var(--border);border-radius:7px;padding:6px 14px;color:var(--text2);cursor:pointer;font-size:13px;font-family:inherit;white-space:nowrap;transition:all .15s}
+  .close-btn:hover{border-color:var(--border-h);color:var(--text1)}
+
+  .tabs{display:flex;gap:0;border-bottom:1px solid var(--border);margin-top:16px}
+  .tab{padding:9px 18px;font-size:13px;font-weight:500;color:var(--text2);cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-1px;transition:all .15s;user-select:none}
+  .tab:hover{color:var(--text1)}
+  .tab.active{color:var(--accent);border-bottom-color:var(--accent)}
+  .tab-body{padding:18px 22px 22px}
+
+  .spec-tbl{width:100%;border-collapse:collapse}
+  .spec-tbl tr:last-child td{border-bottom:none}
+  .spec-tbl td{padding:8px 0;border-bottom:1px solid var(--border);font-size:13px;vertical-align:top}
+  .spec-tbl td:first-child{color:var(--text2);width:42%}
+  .spec-tbl td:last-child{color:var(--text1);font-weight:500;text-align:right}
+  .spec-tbl tr.battery-row td:last-child{color:var(--amber)}
+  .battery-note{display:block;font-size:11px;font-weight:400;color:var(--text3);margin-top:2px}
+
+  .acc-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:10px}
+  .acc-card{background:var(--card);border:1px solid var(--border);border-radius:8px;padding:12px 13px;display:flex;flex-direction:column;gap:6px}
+  .acc-cat{display:inline-flex;align-items:center;gap:5px;font-size:10.5px;font-weight:600;letter-spacing:.4px;padding:2px 8px;border-radius:4px;text-transform:uppercase;width:fit-content}
+  .acc-name{font-size:13px;font-weight:500;color:var(--text1);line-height:1.3}
+  .acc-note{font-size:11.5px;color:var(--text2);line-height:1.4}
+  .acc-foot{display:flex;align-items:center;justify-content:space-between;margin-top:2px}
+  .acc-price{font-size:13px;font-weight:600;color:var(--accent)}
+  .acc-link{font-size:11.5px;color:var(--accent);text-decoration:none;opacity:.8}
+  .acc-link:hover{opacity:1;text-decoration:underline}
+  .acc-section{margin-bottom:18px}
+  .acc-section-title{font-size:11px;font-weight:700;color:var(--text3);letter-spacing:.8px;text-transform:uppercase;margin-bottom:8px}
+  .no-acc{color:var(--text3);font-size:13px;padding:16px 0}
+
+  .cat-kit     {background:rgba(200,120,50,.12);color:#C87832}
+  .cat-battery {background:rgba(245,166,35,.15);color:#F5A623}
+  .cat-lens    {background:rgba(255,100,150,.12);color:#FF6496}
+  .cat-filters {background:rgba(43,200,200,.12);color:#2BC8C8}
+  .cat-mic     {background:rgba(155,122,255,.15);color:#9B7AFF}
+  .cat-handle  {background:rgba(58,158,255,.15);color:#3A9EFF}
+  .cat-tripod  {background:rgba(46,204,135,.12);color:#2ECC87}
+  .cat-plate   {background:rgba(107,140,174,.15);color:#8FB0CE}
+  .cat-tracking{background:rgba(232,62,140,.14);color:#E83E8C}
+  .cat-motor   {background:rgba(216,90,48,.14);color:#D85A30}
+  .cat-module  {background:rgba(127,119,221,.16);color:#7F77DD}
+  .cat-mount   {background:rgba(79,195,247,.15);color:#4FC3F7}
+
+  .cmp-wrap{overflow-x:auto}
+  .cmp-tbl{width:100%;border-collapse:collapse;font-size:13px;table-layout:fixed}
+  .cmp-tbl th{text-align:left;padding:10px 12px;font-weight:600;font-size:12px;color:var(--text2);border-bottom:1px solid var(--border);background:var(--card)}
+  .cmp-tbl th:first-child{width:150px}
+  .cmp-tbl td{padding:8px 12px;border-bottom:1px solid var(--border);color:var(--text1);vertical-align:top}
+  .cmp-tbl td:first-child{color:var(--text2);font-size:12px}
+  .cmp-tbl tr:last-child td{border-bottom:none}
+  .cmp-tbl tr:hover td{background:var(--card)}
+  .price-row td{color:var(--accent)!important;font-weight:700}
+  .price-row td:first-child{color:var(--text2)!important;font-weight:400}
+  .price-link{color:var(--accent);text-decoration:none}
+  .price-link:hover{text-decoration:underline}
+  .hint{text-align:center;padding:40px 0;color:var(--text3)}
+  .hint-icon{font-size:32px;margin-bottom:10px}
+
+  .cmp-note{font-size:12.5px;color:var(--text2);line-height:1.5;margin-bottom:14px;padding:10px 12px;background:var(--card);border:1px solid var(--border);border-radius:8px}
+  .cmp-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:10px}
+  .cmp-card{display:flex;align-items:center;gap:9px;background:var(--card);border:1px solid var(--border);border-radius:8px;padding:12px 13px;text-decoration:none;transition:all .15s}
+  .cmp-card:hover{border-color:var(--border-h);background:var(--card-h)}
+  .cmp-dot{width:9px;height:9px;border-radius:50%;flex-shrink:0}
+  .cmp-name{font-size:13px;font-weight:500;color:var(--text1);flex:1}
+  .cmp-go{font-size:11.5px;color:var(--accent);opacity:.85}
+
+  footer{text-align:center;font-size:11.5px;color:var(--text3);padding:18px;border-top:1px solid var(--border);margin-top:36px;line-height:1.6}
+  footer a{color:var(--accent);text-decoration:none}
+</style>
+</head>
+<body>
+<header>
+  <div class="logo">
+    <div class="logo-icon">🎥</div>
+    <div><div class="logo-title">DJI Gimbal Explorer</div><div class="logo-sub">Pocket, RS &amp; Mobile Stabilizers — Specs &amp; Pricing</div></div>
+  </div>
+  <a class="orms-brand" href="https://www.ormsdirect.co.za" target="_blank"><img src="https://www.ormsdirect.co.za/cdn/shop/files/orms-logo-social-media.webp?v=1756726421" alt="Orms Direct logo"><span>Prices via Orms Direct</span></a>
+</header>
+
+<div class="freshness-bar">⚠ Prices manually verified on <b>17 June 2026</b> — this file does not auto-update. Click "View on Orms Direct" on any item for the current live price. Several Mobile 8P items are currently shown as Pre-Order / Sold out at Orms.</div>
+
+<main><div id="app"></div></main>
+
+<footer>
+  Prices sourced from <a href="https://www.ormsdirect.co.za" target="_blank">ormsdirect.co.za</a> · This is a static file and cannot refresh prices automatically — always confirm via the Orms links before purchasing · Prices shown are for the base/standalone configuration unless a combo is noted · Specs marked ~ are estimates · Battery type (built-in vs swappable grip) noted per product
+</footer>
+
+<script>
+const O = 'https://www.ormsdirect.co.za';
+const ACC  = O+'/collections/gimbal-accessories';
+const GIM  = O+'/collections/camera-gimbals';
+
+function acc(cat,name,price,note,url){return{cat,name,price,note,url:url||ACC}}
+
+const GIMBALS = [
+  {id:'pocket3',name:'DJI Osmo Pocket 3',cat:'Pocket',isNew:false,price:'R10,695',combo:'Standard Combo',color:'#2ECC87',
+   url:O+'/products/dji-osmo-pocket-3-standard-combo',tagline:'The pocket camera that popularised the rotating screen',
+   battery:{model:'DJI Osmo Pocket 3 Battery (1300mAh)',note:'Built-in & non-removable — up to 166 min recording per charge'},
+   specs:{'Weight':'117 g','Payload / Phone Support':'—','Battery Runtime':'Up to 166 min','Charging Time':'~52 min (0–80%, PD fast charge)','Display':'2" rotatable OLED touchscreen','Stabilization':'3-axis mechanical gimbal','Tracking System':'ActiveTrack 6.0','Camera / Sensor':'1" CMOS · 20mm equiv. f/2.0','Key Feature':'4K/120fps slow-mo · D-Cinelike & 10-bit D-Log M'},
+   accessories:[
+     {cat:'kit',name:'Osmo Pocket 3 Creator Combo',price:'R13,695',note:'Adds Mic Transmitter, Wide-Angle Lens, Mini Tripod & case',url:O+'/products/dji-osmo-pocket-3-creator-combo'},
+     {cat:'lens',name:'Osmo Pocket 3 Wide-Angle Lens',price:'View at Orms',note:'Expands FOV to 108° · included in Creator Combo',url:ACC},
+     {cat:'filters',name:'SmallRig ND Filter Set for Osmo Pocket 3',price:'R795',note:'Magnetic ND filter set for cinematic motion blur',url:O+'/products/smallrig-nd-filter-set-for-dji-osmo-pocket-3'},
+     {cat:'battery',name:'Osmo Pocket 3 Battery Handle',price:'View at Orms',note:'Extension grip with extra battery capacity',url:ACC},
+     {cat:'mic',name:'DJI Mic 2 (Compatible Transmitter)',price:'View at Orms',note:'Direct wireless audio connection',url:ACC},
+   ]},
+
+  {id:'pocket4',name:'DJI Osmo Pocket 4',cat:'Pocket',isNew:true,price:'R10,795',combo:'Standard Combo',color:'#2ECC87',
+   url:O+'/products/dji-osmo-pocket-4-standard-combo',tagline:'4K/240fps slow-mo with 107GB built-in storage',
+   battery:{model:'DJI Osmo Pocket 4 Battery (1545mAh)',note:'Built-in & non-removable — up to 240 min @1080p24, 135 min @4K/60'},
+   specs:{'Weight':'190.5 g','Payload / Phone Support':'—','Battery Runtime':'Up to 240 min (1080p24)','Charging Time':'~18 min to 80% (65W PD charger)','Display':'2" rotatable OLED touchscreen','Stabilization':'3-axis mechanical gimbal','Tracking System':'ActiveTrack 7.0','Camera / Sensor':'1" CMOS · 20mm equiv. f/2.0 · 2× lossless zoom','Key Feature':'4K/240fps slow-mo · 14-stop dynamic range · 107GB built-in storage'},
+   accessories:[
+     {cat:'kit',name:'Osmo Pocket 4 Creator Combo',price:'R13,295',note:'Adds DJI Mic 3, Wide-Angle Lens, Fill Light & Mini Tripod',url:O+'/products/dji-osmo-pocket-4-creator-combo'},
+     {cat:'lens',name:'Osmo Pocket 4 Wide-Angle Lens',price:'View at Orms',note:'Included in Creator Combo · also sold separately',url:ACC},
+     {cat:'battery',name:'Osmo Pocket 4 Battery Handle',price:'View at Orms',note:'Extension grip for longer shoots',url:ACC},
+     {cat:'mic',name:'DJI Mic 3 (Compatible Transmitter)',price:'View at Orms',note:'4-channel direct wireless recording',url:ACC},
+   ]},
+
+  {id:'rs3mini',name:'DJI RS 3 Mini',cat:'RS Mini',isNew:false,price:'R4,795',combo:'',color:'#3A9EFF',
+   url:O+'/products/dji-rs-3-mini-gimbal-stabilizer',tagline:'Lightweight entry point into single-handed gimbals',
+   battery:{model:'RS 3 Mini Built-in Battery',note:'Non-removable — approx. 10 hr runtime per charge'},
+   specs:{'Weight':'795 g','Payload / Phone Support':'2 kg','Battery Runtime':'~10 hr','Charging Time':'~1.5 hr (full)','Display':'1.4" colour touchscreen','Stabilization':'3-axis · 3rd-gen RS algorithm','Tracking System':'ActiveTrack via Ronin app (phone-assisted)','Camera / Sensor':'Mirrorless / compact cameras up to 2kg','Key Feature':'Native vertical shooting · folds to backpack-friendly size'},
+   accessories:[
+     {cat:'handle',name:'SmallRig Sling Handle for RS 3 / RS 3 Mini',price:'R960',note:'Ergonomic top handle for low/high-angle shots',url:O+'/products/smallrig-sling-handle-for-dji-rs-3-and-rs-3-mini-gimbals'},
+     {cat:'handle',name:'SmallRig 3028C Sling Handle (RS 2 / RSC 2 / RS 3 / RS 3 Pro / RS 3 Mini)',price:'R1,440',note:'Universal sling handle, multi-generation fit',url:O+'/products/smallrig-3028c-sling-handle-for-dji-rs-2-rsc-2-rs-3-rs-3-pro-rs-3-mini'},
+     {cat:'tripod',name:'SmallRig AD-01 Heavy-Duty Tripod w/ Fluid Head',price:'R3,200',note:'Save 20% · doubles as a gimbal extension grip',url:O+'/products/smallrig-ad-01-heavy-duty-tripod-with-fluid-head'},
+     {cat:'plate',name:'Quick-Release Plate for RS 3 Mini',price:'View at Orms',note:'Spare/replacement camera mounting plate',url:ACC},
+   ]},
+
+  {id:'rs4mini',name:'DJI RS 4 Mini',cat:'RS Mini',isNew:true,price:'R7,095',combo:'Gimbal only',color:'#3A9EFF',
+   url:O+'/products/dji-rs-4-mini-gimbal-stabilizer',tagline:'Built-in AI tracking module in a mini body',
+   battery:{model:'RS 4 Mini Built-in Battery (3100mAh)',note:'Non-removable — approx. 13 hr runtime per charge'},
+   specs:{'Weight':'890 g','Payload / Phone Support':'0.4–2 kg','Battery Runtime':'~13 hr','Charging Time':'~1.5 hr (full)','Display':'OLED touchscreen','Stabilization':'3-axis · 4th-gen RS algorithm','Tracking System':'Built-in RS Intelligent Tracking Module','Camera / Sensor':'Mirrorless / compact cameras up to 2kg','Key Feature':'First mini gimbal with a built-in tracking camera'},
+   accessories:[
+     {cat:'kit',name:'RS 4 Mini Gimbal Stabilizer Combo Kit',price:'R8,595',note:'Adds carrying case, extension rod & extra plates',url:O+'/products/dji-rs-4-mini-gimbal-stabilizer-combo-kit'},
+     {cat:'tripod',name:'Extension Rod & Mini Tripod for RS 4 Mini',price:'View at Orms',note:'Included in Combo Kit · also sold separately',url:ACC},
+     {cat:'plate',name:'Quick-Release Plate for RS 4 Mini',price:'View at Orms',note:'Spare/replacement camera mounting plate',url:ACC},
+   ]},
+
+  {id:'rs4',name:'DJI RS 4',cat:'RS',isNew:false,price:'R9,595',combo:'Gimbal only',color:'#7F77DD',
+   url:O+'/products/dji-rs-4-gimbal-stabilizer',tagline:'The all-rounder for hybrid mirrorless shooters',
+   battery:{model:'RS 4 Built-in Battery',note:'Non-removable — approx. 12 hr runtime per charge'},
+   specs:{'Weight':'~1.5 kg','Payload / Phone Support':'3 kg','Battery Runtime':'~12 hr','Charging Time':'~1 hr (full)','Display':'Full-colour touchscreen','Stabilization':'3-axis · 4th-gen RS algorithm','Tracking System':'Optional RS Intelligent Tracking Module','Camera / Sensor':'Mirrorless / DSLR cameras up to 3kg','Key Feature':'Auto-lock axes · native vertical shooting'},
+   accessories:[
+     {cat:'kit',name:'RS 4 Gimbal Stabilizer Combo',price:'R11,995',note:'Adds Briefcase Handle & Focus Motor mounting kit',url:O+'/products/dji-rs-4-gimbal-stabilizer-combo'},
+     {cat:'tracking',name:'RS Intelligent Tracking Module',price:'View at Orms',note:'Magnetic clip-on AI subject tracking',url:ACC},
+     {cat:'plate',name:'Quick-Release Plates for RS 4',price:'View at Orms',note:'Spare Arca-Swiss style camera plates',url:ACC},
+   ]},
+
+  {id:'rs4pro',name:'DJI RS 4 Pro',cat:'RS Pro',isNew:false,price:'R17,795',combo:'Gimbal only',color:'#D85A30',
+   url:O+'/products/dji-rs-4-pro-gimbal-stabilizer',tagline:'Professional payload for cinema bodies & cine lenses',
+   battery:{model:'DJI RS BG30 Battery Grip (1950mAh)',note:'Removable/swappable — approx. 13 hr runtime per charge'},
+   specs:{'Weight':'~1.5 kg (gimbal + BG30 grip)','Payload / Phone Support':'4.5 kg','Battery Runtime':'~13 hr','Charging Time':'~1.5 hr (full)','Display':'Full-colour touchscreen','Stabilization':'3-axis · 4th-gen RS algorithm, reinforced motors','Tracking System':'Optional RS Intelligent Tracking Module','Camera / Sensor':'Cinema cameras & cine lenses up to 4.5kg','Key Feature':'Swappable battery grip · RSA accessory port for pro rigs'},
+   accessories:[
+     {cat:'kit',name:'RS 4 Pro Gimbal Stabilizer Combo',price:'R21,995',note:'Adds Briefcase Handle, Focus Motor & Tracking Module',url:O+'/products/dji-rs-4-pro-gimbal-stabilizer-combo'},
+     {cat:'battery',name:'DJI RS BG30 Battery Grip',price:'View at Orms',note:'Spare/swappable battery grip',url:ACC},
+     {cat:'motor',name:'DJI Focus Pro Motor',price:'View at Orms',note:'Wireless follow-focus for cine lenses',url:ACC},
+   ]},
+
+  {id:'rs5',name:'DJI RS 5',cat:'RS',isNew:true,price:'R10,895',combo:'Gimbal only',color:'#7F77DD',
+   url:O+'/products/dji-rs-5-gimbal-stabilizer',tagline:'5th-gen stabilization with 50% more peak motor torque',
+   battery:{model:'DJI RS BG33 Battery Grip',note:'Removable/swappable — approx. 14 hr runtime, 1 hr full charge'},
+   specs:{'Weight':'1.46 kg (incl. BG33 grip & plates)','Payload / Phone Support':'3 kg','Battery Runtime':'~14 hr (up to 30 hr with BG70 grip)','Charging Time':'~1 hr (full, 65W PD)','Display':'1.8" OLED touchscreen','Stabilization':'3-axis · 5th-gen RS algorithm (+50% peak torque)','Tracking System':'RS Enhanced Intelligent Tracking Module (in Combo)','Camera / Sensor':'Mirrorless / DSLR cameras up to 3kg','Key Feature':'Z-axis indicator · 3rd-gen native vertical shooting'},
+   accessories:[
+     {cat:'kit',name:'RS 5 Combo (AI Tracking Module + Briefcase Handle)',price:'R12,995',note:'Adds Enhanced Tracking Module & Electronic Briefcase Handle',url:O+'/products/dji-rs-5-gimbal-stabilizer-combo'},
+     {cat:'battery',name:'DJI RS BG70 High-Capacity Battery Grip',price:'View at Orms',note:'Extends runtime to ~30 hr',url:ACC},
+     {cat:'motor',name:'DJI Focus Pro Motor (zoom + focus pair)',price:'View at Orms',note:'Wireless lens control via joystick/dial',url:ACC},
+   ]},
+
+  {id:'om7',name:'DJI Osmo Mobile 7',cat:'Mobile',isNew:false,price:'R1,495',combo:'',color:'#C45090',
+   url:O+'/products/dji-osmo-mobile-7-smartphone-gimbal',tagline:'Entry-level smartphone gimbal with built-in extension rod',
+   battery:{model:'Osmo Mobile 7 Built-in Battery',note:'Non-removable — approx. 10 hr standby'},
+   specs:{'Weight':'~368 g','Payload / Phone Support':'~290 g (most phones with case)','Battery Runtime':'~10 hr','Charging Time':'USB-C · also charges phone while filming','Display':'None — controlled via Mimo app on phone','Stabilization':'3-axis motorised gimbal','Tracking System':'ActiveTrack via Mimo app (Android & iOS)','Camera / Sensor':'Uses connected smartphone\u2019s own camera','Key Feature':'Built-in extension rod & tripod · gesture control'},
+   accessories:[
+     {cat:'mount',name:'DJI OM Magnetic Phone Clamp 5',price:'R545',note:'Quick-attach magnetic phone mount',url:O+'/products/dji-om-magnetic-phone-clamp-5'},
+     {cat:'module',name:'DJI OM Multifunctional Module 2',price:'R995',note:'Magnetic tracking camera, fill light & mic receiver',url:O+'/products/dji-om-multifunctional-module-2'},
+   ]},
+
+  {id:'om7p',name:'DJI Osmo Mobile 7P',cat:'Mobile',isNew:false,price:'R2,795',combo:'',color:'#C45090',
+   url:O+'/products/dji-osmo-mobile-7p-smartphone-gimbal',tagline:'Adds a detachable tracking & lighting module',
+   battery:{model:'Osmo Mobile 7P Built-in Battery (3350mAh)',note:'Non-removable — approx. 10 hr standby'},
+   specs:{'Weight':'368 g','Payload / Phone Support':'~290 g (most phones with case)','Battery Runtime':'~10 hr','Charging Time':'USB-C · also charges phone while filming','Display':'None — controlled via Mimo app on phone','Stabilization':'3-axis motorised gimbal','Tracking System':'ActiveTrack via Multifunctional Module','Camera / Sensor':'Uses connected smartphone\u2019s own camera','Key Feature':'Multifunctional Module: tracking camera + fill light + mic receiver'},
+   accessories:[
+     {cat:'mount',name:'DJI OM Magnetic Phone Clamp 5',price:'R545',note:'Quick-attach magnetic phone mount',url:O+'/products/dji-om-magnetic-phone-clamp-5'},
+     {cat:'module',name:'DJI OM Multifunctional Module 2',price:'R995',note:'Magnetic tracking camera, fill light & mic receiver',url:O+'/products/dji-om-multifunctional-module-2'},
+   ]},
+
+  {id:'om8',name:'DJI Osmo Mobile 8',cat:'Mobile',isNew:true,price:'R3,195',combo:'',color:'#C45090',
+   url:O+'/products/dji-osmo-mobile-8-smartphone-gimbal',tagline:'360° panning with Apple DockKit support',
+   battery:{model:'Osmo Mobile 8 Built-in Battery (3350mAh)',note:'Non-removable — approx. 10 hr standby'},
+   specs:{'Weight':'370 g','Payload / Phone Support':'~290 g (most phones with case)','Battery Runtime':'~10 hr','Charging Time':'USB-C · also charges phone while filming','Display':'None — controlled via Mimo app on phone','Stabilization':'3-axis motorised gimbal, 360° horizontal pan','Tracking System':'ActiveTrack + Apple DockKit + pet tracking','Camera / Sensor':'Uses connected smartphone\u2019s own camera','Key Feature':'360° horizontal panning · NFC pairing · gesture control'},
+   accessories:[
+     {cat:'mount',name:'DJI OM Magnetic Phone Clamp 5',price:'R545',note:'Quick-attach magnetic phone mount',url:O+'/products/dji-om-magnetic-phone-clamp-5'},
+     {cat:'module',name:'DJI OM Multifunctional Module 2',price:'R995',note:'Magnetic tracking camera, fill light & mic receiver',url:O+'/products/dji-om-multifunctional-module-2'},
+   ]},
+
+  {id:'om8p',name:'DJI Osmo Mobile 8P',cat:'Mobile',isNew:true,price:'R3,095',combo:'Standard Combo',color:'#C45090',
+   url:O+'/products/dji-osmo-mobile-8p-standard-combo',tagline:'Flagship Mobile with a detachable FrameTap remote',
+   battery:{model:'Osmo Mobile 8P Built-in Battery',note:'Non-removable · listed Pre-Order/Sold out at Orms at time of writing'},
+   specs:{'Weight':'~390 g','Payload / Phone Support':'~300 g (most phones with case)','Battery Runtime':'~10 hr','Charging Time':'USB-C · also charges phone while filming','Display':'None — controlled via Mimo app on phone','Stabilization':'3-axis motorised gimbal, 360° horizontal pan','Tracking System':'ActiveTrack 8.0 · Module 2 object lock · Apple DockKit','Camera / Sensor':'Uses connected smartphone\u2019s own camera','Key Feature':'Detachable Osmo FrameTap remote for pro framing'},
+   accessories:[
+     {cat:'kit',name:'Osmo Mobile 8P Advanced Tracking Combo',price:'R3,495',note:'Adds enhanced tracking accessory bundle · Pre-Order',url:O+'/products/dji-osmo-mobile-8p-advanced-tracking-combo'},
+     {cat:'kit',name:'Osmo Mobile 8P Creator Combo',price:'R4,595',note:'Top-tier bundle with full accessory set · Pre-Order',url:O+'/products/dji-osmo-mobile-8p-creator-combo'},
+     {cat:'mount',name:'DJI OM Magnetic Phone Clamp 5',price:'R545',note:'Quick-attach magnetic phone mount',url:O+'/products/dji-om-magnetic-phone-clamp-5'},
+     {cat:'module',name:'DJI OM Multifunctional Module 2',price:'R995',note:'Magnetic tracking camera, fill light & mic receiver',url:O+'/products/dji-om-multifunctional-module-2'},
+   ]},
+];
+
+const ALL_CATS = ['All','Pocket','RS Mini','RS','RS Pro','Mobile'];
+const SK = ['Weight','Payload / Phone Support','Battery Runtime','Charging Time','Display','Stabilization','Tracking System','Camera / Sensor','Key Feature'];
+const ACC_CAT_LABELS = {kit:'Combo / Kit',battery:'Battery',lens:'Lens',filters:'ND Filters',mic:'Microphone',handle:'Handle / Grip',tripod:'Tripod',plate:'Quick-Release Plate',tracking:'Tracking Module',motor:'Focus Motor',module:'Multifunctional Module',mount:'Phone Mount'};
+
+const RETAILERS = [
+  {name:'Takealot',color:'#1A8F3C',search:q=>`https://www.takealot.com/all?qsearch=${encodeURIComponent(q)}`},
+  {name:'Cameraland',color:'#C45090',search:q=>`https://cameraland.co.za/search?q=${encodeURIComponent(q)}`},
+  {name:'Outdoorphoto',color:'#7F77DD',search:q=>`https://www.outdoorphoto.co.za/search?q=${encodeURIComponent(q)}`},
+  {name:'PriceCheck (aggregator)',color:'#3A9EFF',search:q=>`https://www.pricecheck.co.za/search?search=${encodeURIComponent(q)}`},
+];
+
+function renderCompare(d){
+  let h = `<div class="cmp-note">These are static links, not live prices — this page can't fetch other sites' prices automatically. Each button opens a real-time search for "${d.name}" on that retailer so you can compare against the Orms price above (${d.price}) yourself.</div>`;
+  h += '<div class="cmp-grid">';
+  for(const r of RETAILERS){
+    h += `<a class="cmp-card" href="${r.search(d.name)}" target="_blank">
+      <span class="cmp-dot" style="background:${r.color}"></span>
+      <span class="cmp-name">${r.name}</span>
+      <span class="cmp-go">Search ↗</span>
+    </a>`;
+  }
+  h += '</div>';
+  return h;
+}
+
+let state = {mode:'browse', cat:'All', viewing:null, viewTab:{}, compareIds:[]};
+
+function render(){
+  const app  = document.getElementById('app');
+  const list = state.cat==='All' ? GIMBALS : GIMBALS.filter(d=>d.cat===state.cat);
+  const cmpd = state.compareIds.map(id=>GIMBALS.find(d=>d.id===id)).filter(Boolean);
+  let h = '';
+
+  h += `<div class="toolbar">
+    <div class="cats">${ALL_CATS.map(c=>`<button class="cat-btn${state.cat===c?' active':''}" onclick="setCat('${c}')">${c}</button>`).join('')}</div>
+    <button class="cmp-btn${state.mode==='compare'?' active':''}" onclick="toggleMode()">⇄ Compare${state.compareIds.length?` (${state.compareIds.length})`:''}</button>
+  </div>`;
+
+  h += '<div class="grid">';
+  for(const d of list){
+    const isSel = state.compareIds.includes(d.id);
+    const isV   = state.viewing===d.id && state.mode==='browse';
+    const maxed = state.compareIds.length>=3 && !isSel;
+    let cls = 'card'+(isV?' viewing':'')+(isSel?' selected':'')+(state.mode==='compare'&&maxed?' dim':'');
+    h += `<div class="${cls}" onclick="${state.mode==='compare'&&maxed?'':` cardClick('${d.id}')`}">
+      ${state.mode==='compare'?`<div class="sel-badge${isSel?' on':''}">${isSel?'✓':'+'}</div>`:''}
+      <div class="dot" style="background:${d.color}"></div>
+      <div class="card-name">${d.name}${d.isNew?'<span class="new">NEW</span>':''}</div>
+      <div class="card-cat">${d.cat}</div>
+      <div class="card-price">${d.price}</div>
+      ${d.combo?`<div class="card-combo">${d.combo}</div>`:''}
+    </div>`;
+  }
+  h += '</div>';
+
+  if(state.mode==='browse' && state.viewing){
+    const d = GIMBALS.find(x=>x.id===state.viewing);
+    if(d){
+      const tab = state.viewTab[d.id]||'specs';
+      h += `<div class="panel">
+        <div class="panel-top">
+          <div class="panel-head">
+            <div>
+              <div class="panel-title"><div class="dot" style="background:${d.color};width:11px;height:11px"></div>${d.name}${d.isNew?'<span class="new">NEW</span>':''}</div>
+              <div class="panel-sub">${d.tagline}</div>
+              <div class="price-big">${d.price}</div>
+              ${d.combo?`<div class="price-sub">${d.combo}</div>`:''}
+              <a class="orms-btn" href="${d.url}" target="_blank">↗ &nbsp;View on Orms Direct</a>
+            </div>
+            <button class="close-btn" onclick="closePanel()">✕ Close</button>
+          </div>
+          <div class="tabs">
+            <div class="tab${tab==='specs'?' active':''}" onclick="setTab('${d.id}','specs')">Specs</div>
+            <div class="tab${tab==='acc'?' active':''}" onclick="setTab('${d.id}','acc')">Accessories (${d.accessories.length})</div>
+            <div class="tab${tab==='compare'?' active':''}" onclick="setTab('${d.id}','compare')">Compare Prices</div>
+          </div>
+        </div>
+        <div class="tab-body">`;
+
+      if(tab==='specs'){
+        h += `<table class="spec-tbl">
+          <tr class="battery-row"><td>Battery</td><td>${d.battery.model}<span class="battery-note">${d.battery.note}</span></td></tr>
+          ${SK.map(k=>`<tr><td>${k}</td><td>${d.specs[k]||'—'}</td></tr>`).join('')}
+        </table>`;
+      } else if(tab==='compare'){
+        h += renderCompare(d);
+      } else {
+        const groups = {};
+        for(const a of d.accessories){ if(!groups[a.cat]) groups[a.cat]=[]; groups[a.cat].push(a); }
+        const order = ['kit','battery','tracking','module','mount','handle','tripod','plate','motor','lens','filters','mic'];
+        let hasAny = false;
+        for(const cat of order){
+          if(!groups[cat]) continue;
+          hasAny = true;
+          h += `<div class="acc-section"><div class="acc-section-title">${ACC_CAT_LABELS[cat]||cat}</div><div class="acc-grid">`;
+          for(const a of groups[cat]){
+            h += `<div class="acc-card">
+              <span class="acc-cat cat-${a.cat}">${ACC_CAT_LABELS[a.cat]||a.cat}</span>
+              <div class="acc-name">${a.name}</div>
+              ${a.note?`<div class="acc-note">${a.note}</div>`:''}
+              <div class="acc-foot"><span class="acc-price">${a.price}</span><a class="acc-link" href="${a.url}" target="_blank">View at Orms ↗</a></div>
+            </div>`;
+          }
+          h += '</div></div>';
+        }
+        if(!hasAny) h += '<div class="no-acc">No accessories listed for this item yet.</div>';
+      }
+      h += '</div></div>';
+    }
+  }
+
+  if(state.mode==='compare'){
+    if(cmpd.length<2){
+      h += `<div class="panel"><div class="hint"><div class="hint-icon">⇄</div><div>Select 2 or 3 items above to compare specs side by side</div></div></div>`;
+    } else {
+      h += `<div class="panel"><div class="panel-top">
+        <div class="panel-head">
+          <div><div class="panel-title" style="font-size:17px">Comparing ${cmpd.length} items</div><div class="panel-sub">Side-by-side specs &amp; Orms pricing</div></div>
+          <button class="close-btn" onclick="clearCmp()">🗑 Clear</button>
+        </div></div>
+        <div class="tab-body"><div class="cmp-wrap"><table class="cmp-tbl">
+        <thead><tr><th>Spec</th>${cmpd.map(d=>`<th><span style="color:${d.color}">${d.name}</span>${d.isNew?'<span class="new">NEW</span>':''}</th>`).join('')}</tr></thead>
+        <tbody>
+        <tr class="price-row"><td>Orms Price</td>${cmpd.map(d=>`<td><a class="price-link" href="${d.url}" target="_blank">${d.price} ↗</a>${d.combo?`<div style="font-size:10px;color:var(--text3);margin-top:2px">${d.combo}</div>`:''}</td>`).join('')}</tr>
+        <tr><td>Battery</td>${cmpd.map(d=>`<td>${d.battery.model}</td>`).join('')}</tr>
+        ${SK.map(k=>`<tr><td>${k}</td>${cmpd.map(d=>`<td>${d.specs[k]||'—'}</td>`).join('')}</tr>`).join('')}
+        </tbody></table></div></div></div>`;
+    }
+  }
+
+  app.innerHTML = h;
+}
+
+function setCat(c)    {state.cat=c; render()}
+function closePanel() {state.viewing=null; render()}
+function clearCmp()   {state.compareIds=[]; render()}
+function setTab(id,t) {state.viewTab[id]=t; render()}
+function toggleMode() {state.mode=state.mode==='browse'?'compare':'browse'; state.viewing=null; render()}
+function cardClick(id){
+  if(state.mode==='compare'){
+    if(state.compareIds.includes(id)) state.compareIds=state.compareIds.filter(x=>x!==id);
+    else if(state.compareIds.length<3) state.compareIds.push(id);
+  } else {
+    state.viewing = state.viewing===id ? null : id;
+  }
+  render();
+}
+
+render();
+</script>
+</body>
+</html>

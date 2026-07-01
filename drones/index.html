@@ -1,0 +1,487 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DJI Drone Explorer — Orms Direct</title>
+<style>
+  :root {
+    --bg:#0C1018; --surface:#131920; --card:#1A2330; --card-h:#1F2A3A;
+    --border:#263040; --border-h:#3A5070;
+    --accent:#3A9EFF; --accent-bg:rgba(58,158,255,.1); --accent-b:rgba(58,158,255,.3);
+    --green:#2ECC87; --green-bg:rgba(46,204,135,.12); --green-b:rgba(46,204,135,.3);
+    --amber:#F5A623; --amber-bg:rgba(245,166,35,.1); --amber-b:rgba(245,166,35,.3);
+    --text1:#EDF2FA; --text2:#8A9BB0; --text3:#4E6075;
+    --r:10px;
+  }
+  *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+  body{background:var(--bg);color:var(--text1);font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;font-size:14px;min-height:100vh}
+  ::-webkit-scrollbar{width:6px;height:6px} ::-webkit-scrollbar-track{background:var(--bg)} ::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px} ::-webkit-scrollbar-thumb:hover{background:var(--border-h)}
+
+  header{background:var(--surface);border-bottom:1px solid var(--border);padding:0 28px;height:58px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:10}
+  .logo{display:flex;align-items:center;gap:10px}
+  .logo-icon{width:32px;height:32px;background:var(--accent);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:18px}
+  .logo-title{font-size:15px;font-weight:600;letter-spacing:-.2px}
+  .logo-sub{font-size:11px;color:var(--text2);margin-top:1px}
+  .orms-pill{font-size:11px;font-weight:500;color:var(--accent);background:var(--accent-bg);border:1px solid var(--accent-b);padding:4px 11px;border-radius:20px}
+  .orms-brand{display:flex;align-items:center;gap:9px;text-decoration:none;background:var(--accent-bg);border:1px solid var(--accent-b);padding:5px 12px 5px 6px;border-radius:20px;transition:background .15s}
+  .orms-brand:hover{background:rgba(58,158,255,.18)}
+  .orms-brand img{height:22px;width:auto;border-radius:4px;display:block}
+  .orms-brand span{font-size:11px;font-weight:500;color:var(--accent)}
+
+  .freshness-bar{background:var(--amber-bg);border-bottom:1px solid var(--amber-b);padding:8px 28px;font-size:12px;color:var(--amber);display:flex;align-items:center;gap:8px;justify-content:center;text-align:center}
+  .freshness-bar b{color:var(--text1)}
+
+  main{max-width:1200px;margin:0 auto;padding:24px 20px 60px}
+
+  .toolbar{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-bottom:18px}
+  .cats{display:flex;gap:5px;flex-wrap:wrap}
+  .cat-btn{padding:5px 13px;border-radius:20px;border:1px solid var(--border);background:transparent;cursor:pointer;font-size:12px;color:var(--text2);font-family:inherit;transition:all .15s}
+  .cat-btn:hover{border-color:var(--border-h);color:var(--text1)}
+  .cat-btn.active{background:var(--card-h);color:var(--text1);border-color:var(--border-h)}
+  .cmp-btn{padding:6px 16px;border-radius:var(--r);border:1px solid var(--border);background:transparent;cursor:pointer;font-size:13px;color:var(--text2);font-family:inherit;white-space:nowrap;transition:all .15s}
+  .cmp-btn:hover{border-color:var(--border-h);color:var(--text1)}
+  .cmp-btn.active{border-color:var(--accent-b);color:var(--accent);background:var(--accent-bg)}
+
+  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(142px,1fr));gap:9px;margin-bottom:20px}
+  .card{background:var(--card);border:1px solid var(--border);border-radius:var(--r);padding:14px 12px;cursor:pointer;position:relative;user-select:none;transition:border-color .15s,background .15s,transform .1s}
+  .card:hover{border-color:var(--border-h);background:var(--card-h);transform:translateY(-1px)}
+  .card.viewing{border:2px solid var(--border-h);background:var(--card-h)}
+  .card.selected{border:2px solid var(--accent-b);background:var(--accent-bg)}
+  .card.dim{opacity:.4;cursor:not-allowed;transform:none!important}
+  .dot{width:8px;height:8px;border-radius:50%;display:inline-block;margin-bottom:8px}
+  .new{display:inline-block;font-size:9px;font-weight:700;background:var(--green-bg);color:var(--green);border:1px solid var(--green-b);border-radius:4px;padding:1px 5px;margin-left:5px;vertical-align:middle;letter-spacing:.4px}
+  .card-name{font-size:12.5px;font-weight:600;color:var(--text1);line-height:1.3;margin-bottom:2px}
+  .card-cat{font-size:11px;color:var(--text3);margin-bottom:6px}
+  .card-price{font-size:13px;font-weight:600;color:var(--accent)}
+  .card-combo{font-size:10.5px;color:var(--text3);margin-top:1px}
+  .sel-badge{position:absolute;top:8px;right:8px;width:20px;height:20px;border-radius:50%;background:var(--card);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:11px;color:var(--text3);transition:all .15s}
+  .sel-badge.on{background:var(--accent-bg);border-color:var(--accent-b);color:var(--accent)}
+
+  .panel{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);overflow:hidden;animation:slideIn .18s ease}
+  @keyframes slideIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+  .panel-top{padding:20px 22px 0}
+  .panel-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:16px}
+  .panel-title{font-size:19px;font-weight:700;color:var(--text1);display:flex;align-items:center;gap:8px}
+  .panel-sub{font-size:13px;color:var(--text2);margin-top:3px}
+  .price-big{font-size:24px;font-weight:700;color:var(--accent);margin-top:5px}
+  .price-sub{font-size:12px;color:var(--text3);margin-top:1px}
+  .orms-btn{display:inline-flex;align-items:center;gap:5px;margin-top:10px;padding:6px 14px;background:var(--accent-bg);border:1px solid var(--accent-b);border-radius:7px;color:var(--accent);font-size:13px;font-weight:500;text-decoration:none;transition:background .15s}
+  .orms-btn:hover{background:rgba(58,158,255,.18)}
+  .close-btn{background:transparent;border:1px solid var(--border);border-radius:7px;padding:6px 14px;color:var(--text2);cursor:pointer;font-size:13px;font-family:inherit;white-space:nowrap;transition:all .15s}
+  .close-btn:hover{border-color:var(--border-h);color:var(--text1)}
+
+  .tabs{display:flex;gap:0;border-bottom:1px solid var(--border);margin-top:16px}
+  .tab{padding:9px 18px;font-size:13px;font-weight:500;color:var(--text2);cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-1px;transition:all .15s;user-select:none}
+  .tab:hover{color:var(--text1)}
+  .tab.active{color:var(--accent);border-bottom-color:var(--accent)}
+  .tab-body{padding:18px 22px 22px}
+
+  .spec-tbl{width:100%;border-collapse:collapse}
+  .spec-tbl tr:last-child td{border-bottom:none}
+  .spec-tbl td{padding:8px 0;border-bottom:1px solid var(--border);font-size:13px;vertical-align:top}
+  .spec-tbl td:first-child{color:var(--text2);width:42%}
+  .spec-tbl td:last-child{color:var(--text1);font-weight:500;text-align:right}
+  .spec-tbl tr.battery-row td:last-child{color:var(--amber)}
+  .battery-note{display:block;font-size:11px;font-weight:400;color:var(--text3);margin-top:2px}
+
+  .acc-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:10px}
+  .acc-card{background:var(--card);border:1px solid var(--border);border-radius:8px;padding:12px 13px;display:flex;flex-direction:column;gap:6px}
+  .acc-cat{display:inline-flex;align-items:center;gap:5px;font-size:10.5px;font-weight:600;letter-spacing:.4px;padding:2px 8px;border-radius:4px;text-transform:uppercase;width:fit-content}
+  .acc-name{font-size:13px;font-weight:500;color:var(--text1);line-height:1.3}
+  .acc-note{font-size:11.5px;color:var(--text2);line-height:1.4}
+  .acc-foot{display:flex;align-items:center;justify-content:space-between;margin-top:2px}
+  .acc-price{font-size:13px;font-weight:600;color:var(--accent)}
+  .acc-link{font-size:11.5px;color:var(--accent);text-decoration:none;opacity:.8}
+  .acc-link:hover{opacity:1;text-decoration:underline}
+  .acc-section{margin-bottom:18px}
+  .acc-section-title{font-size:11px;font-weight:700;color:var(--text3);letter-spacing:.8px;text-transform:uppercase;margin-bottom:8px}
+  .no-acc{color:var(--text3);font-size:13px;padding:16px 0}
+
+  .cat-remote {background:rgba(58,158,255,.15);color:#3A9EFF}
+  .cat-goggles{background:rgba(155,122,255,.15);color:#9B7AFF}
+  .cat-battery{background:rgba(245,166,35,.15);color:#F5A623}
+  .cat-charging{background:rgba(245,166,35,.10);color:#F5A623}
+  .cat-props   {background:rgba(46,204,135,.12);color:#2ECC87}
+  .cat-filters {background:rgba(43,200,200,.12);color:#2BC8C8}
+  .cat-lens    {background:rgba(255,100,150,.12);color:#FF6496}
+  .cat-kit     {background:rgba(200,120,50,.12);color:#C87832}
+
+  .cmp-wrap{overflow-x:auto}
+  .cmp-tbl{width:100%;border-collapse:collapse;font-size:13px;table-layout:fixed}
+  .cmp-tbl th{text-align:left;padding:10px 12px;font-weight:600;font-size:12px;color:var(--text2);border-bottom:1px solid var(--border);background:var(--card)}
+  .cmp-tbl th:first-child{width:130px}
+  .cmp-tbl td{padding:8px 12px;border-bottom:1px solid var(--border);color:var(--text1);vertical-align:top}
+  .cmp-tbl td:first-child{color:var(--text2);font-size:12px}
+  .cmp-tbl tr:last-child td{border-bottom:none}
+  .cmp-tbl tr:hover td{background:var(--card)}
+  .price-row td{color:var(--accent)!important;font-weight:700}
+  .price-row td:first-child{color:var(--text2)!important;font-weight:400}
+  .price-link{color:var(--accent);text-decoration:none}
+  .price-link:hover{text-decoration:underline}
+  .hint{text-align:center;padding:40px 0;color:var(--text3)}
+  .hint-icon{font-size:32px;margin-bottom:10px}
+
+  .cmp-note{font-size:12.5px;color:var(--text2);line-height:1.5;margin-bottom:14px;padding:10px 12px;background:var(--card);border:1px solid var(--border);border-radius:8px}
+  .cmp-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:10px}
+  .cmp-card{display:flex;align-items:center;gap:9px;background:var(--card);border:1px solid var(--border);border-radius:8px;padding:12px 13px;text-decoration:none;transition:all .15s}
+  .cmp-card:hover{border-color:var(--border-h);background:var(--card-h)}
+  .cmp-dot{width:9px;height:9px;border-radius:50%;flex-shrink:0}
+  .cmp-name{font-size:13px;font-weight:500;color:var(--text1);flex:1}
+  .cmp-go{font-size:11.5px;color:var(--accent);opacity:.85}
+
+  footer{text-align:center;font-size:11.5px;color:var(--text3);padding:18px;border-top:1px solid var(--border);margin-top:36px;line-height:1.6}
+  footer a{color:var(--accent);text-decoration:none}
+</style>
+</head>
+<body>
+<header>
+  <div class="logo">
+    <div class="logo-icon">🚁</div>
+    <div><div class="logo-title">DJI Drone Explorer</div><div class="logo-sub">Specs, Pricing, Batteries &amp; Accessories</div></div>
+  </div>
+  <a class="orms-brand" href="https://www.ormsdirect.co.za" target="_blank"><img src="https://www.ormsdirect.co.za/cdn/shop/files/orms-logo-social-media.webp?v=1756726421" alt="Orms Direct logo"><span>Prices via Orms Direct</span></a>
+</header>
+
+<div class="freshness-bar">⚠ Prices manually verified on <b>17 June 2026</b> — this file does not auto-update. Click "View on Orms Direct" on any drone for the current live price.</div>
+
+<main><div id="app"></div></main>
+
+<footer>
+  Prices sourced from <a href="https://www.ormsdirect.co.za" target="_blank">ormsdirect.co.za</a> · This is a static file and cannot refresh prices automatically — always confirm via the Orms links before purchasing · Prices shown are for combo/bundle variants where noted · Specs marked ~ are estimates · Battery cross-compatibility noted where applicable
+</footer>
+
+<script>
+const O = 'https://www.ormsdirect.co.za';
+const ACC = O+'/collections/drone-accessories';
+const BAT = O+'/collections/drone-batteries-chargers';
+const COL = O+'/collections/dji-drones';
+const LITO = O+'/collections/dji-lito-x1-and-lito-1-beginner-friendly-camera-drones-and-accessories';
+
+function acc(cat,name,price,note,url){return{cat,name,price,note,url:url||ACC}}
+
+const RCN3   = acc('remote','DJI RC-N3','View at Orms','Smartphone-based · 3.5h battery · no screen',ACC);
+const RC2    = acc('remote','DJI RC 2','View at Orms','5.5" built-in screen · 20km O4 transmission',ACC);
+const RCpro2 = acc('remote','DJI RC Pro 2','View at Orms','7" Mini-LED screen · enterprise/pro use',ACC);
+const RCRC   = acc('remote','DJI RC','View at Orms','5.5" screen · O3+ transmission · 4h battery',ACC);
+const RCM3   = acc('remote','DJI RC Motion 3','View at Orms','Motion wrist control · requires Goggles 3',ACC);
+const RCFPV  = acc('remote','DJI FPV RC 3','View at Orms','Dedicated FPV sticks controller',ACC);
+const RCPlus = acc('remote','DJI RC Plus','View at Orms','7" enterprise controller · RC Pro successor',ACC);
+const GogN3  = acc('goggles','DJI Goggles N3','View at Orms','FPV goggles · pairs with Neo & Avata 2',ACC);
+const Gog3   = acc('goggles','DJI Goggles 3','View at Orms','Micro-OLED · Real View PiP · pairs with RC Motion 3',ACC);
+
+const DRONES = [
+  {id:'neo',name:'DJI Neo',cat:'Entry',isNew:false,price:'R2,995',combo:'Drone only',color:'#1D9E75',
+   url:O+'/products/dji-neo-drone',tagline:'Lightest & easiest to fly',
+   battery:{model:'DJI Neo Intelligent Flight Battery',note:'Unique to Neo — not interchangeable with other models'},
+   specs:{'Weight':'135 g','Flight Time':'18 min','Max Speed':'36 km/h','Camera Sensor':'1/2" CMOS','Video Res':'4K / 30fps','Obstacle Sensing':'Downward only','Range':'6.2 km','Wind Resistance':'Level 5','Storage':'22 GB built-in','Foldable':'Yes'},
+   accessories:[RCN3, RCM3, GogN3,
+     {cat:'props',name:'Propellers for Neo (Pair)',price:'R155',note:'Low-noise replacement propellers',url:O+'/products/dji-propellers-for-neo'},
+     {cat:'props',name:'Propeller Guard for Neo',price:'R295',note:'Integrated protection cage',url:O+'/products/dji-propeller-guard-for-neo'},
+   ]},
+
+  {id:'lito1',name:'DJI Lito 1',cat:'Lito',isNew:true,price:'View at Orms',combo:'',color:'#3BAB72',
+   url:LITO,tagline:'Sub-249g beginner drone with omni sensing',
+   battery:{model:'DJI Lito 1 Intelligent Flight Battery',note:'Unique to Lito 1 — not shared with Lito X1'},
+   specs:{'Weight':'< 249 g','Flight Time':'36 min','Max Speed':'65 km/h','Camera Sensor':'1/2" CMOS f/1.8','Video Res':'4K / 60fps · 4K/100fps slo-mo','Obstacle Sensing':'Omnidirectional','Range':'15 km','Wind Resistance':'Level 5','Storage':'microSD only','Foldable':'Yes'},
+   accessories:[RCN3,
+     {cat:'battery',name:'Lito 1 Intelligent Flight Battery',price:'View at Orms',note:'Up to 36 min flight time',url:LITO},
+     {cat:'charging',name:'Two-Way Charging Hub for Lito 1',price:'R995',note:'Charges up to 3 batteries · 65W+ required',url:O+'/products/dji-two-way-charging-hub-for-lito-1'},
+     {cat:'props',name:'Lito 1 Propellers (Pair)',price:'View at Orms',note:'Replacement low-noise propellers',url:LITO},
+   ]},
+
+  {id:'litox1',name:'DJI Lito X1',cat:'Lito',isNew:true,price:'From R10,695',combo:'FMC + RC-N3',color:'#3BAB72',
+   url:O+'/products/dji-lito-x1-fly-more-combo-with-rc-n3-controller',tagline:'Upgraded sensor, LiDAR & 10-bit D-Log M',
+   battery:{model:'DJI Lito X1 Intelligent Flight Battery',note:'Plus version available for 52 min — not shared with Lito 1'},
+   specs:{'Weight':'< 249 g','Flight Time':'36–52 min','Max Speed':'65 km/h','Camera Sensor':'1/1.3" CMOS f/1.7','Video Res':'4K / 60fps HDR (14 stops DR)','Obstacle Sensing':'Omni + forward LiDAR','Range':'15 km','Wind Resistance':'Level 5','Storage':'42 GB built-in','Foldable':'Yes'},
+   accessories:[RCN3, RC2,
+     {cat:'battery',name:'Lito X1 Intelligent Flight Battery',price:'View at Orms',note:'36 min standard · 52 min with Plus battery',url:O+'/products/dji-lito-x1-fly-more-combo-with-rc-2-controller'},
+     {cat:'charging',name:'Two-Way Charging Hub for Lito X1',price:'View at Orms',note:'Charges up to 3 batteries in parallel',url:O+'/products/dji-lito-x1-fly-more-combo-with-rc-n3-controller'},
+     {cat:'props',name:'Lito X1 Propellers (Pair)',price:'View at Orms',note:'Replacement low-noise propellers',url:LITO},
+   ]},
+
+  {id:'mini3',name:'DJI Mini 3',cat:'Mini',isNew:false,price:'View at Orms',combo:'',color:'#378ADD',
+   url:O+'/products/dji-mini-3-with-smart-controller-fly-more-combo',tagline:'Sub-249g, excellent battery life',
+   battery:{model:'DJI Mini 3 Series Intelligent Flight Battery',note:'Cross-compatible with Mini 3 Pro & Mini 4 Pro (firmware sync may be required)'},
+   specs:{'Weight':'248 g','Flight Time':'38 min','Max Speed':'57 km/h','Camera Sensor':'1/1.3" CMOS','Video Res':'4K / 30fps','Obstacle Sensing':'Downward only','Range':'10 km','Wind Resistance':'Level 5','Storage':'microSD','Foldable':'Yes'},
+   accessories:[RCN3, RC2,
+     {cat:'battery',name:'Mini 3 Series Intelligent Flight Battery',price:'View at Orms',note:'Up to 38 min · also fits Mini 3 Pro & Mini 4 Pro',url:BAT},
+     {cat:'battery',name:'Mini 3 Series Battery Plus',price:'View at Orms',note:'Extended · up to 51 min (check local weight-class rules)',url:BAT},
+     {cat:'charging',name:'Mini 3 Series Two-Way Charging Hub',price:'View at Orms',note:'Charge up to 3 batteries simultaneously',url:ACC},
+     {cat:'filters',name:'Mini 3 Pro ND Filter Set',price:'View at Orms',note:'ND 16/64/256 · cinematic video control',url:ACC},
+     {cat:'props',name:'Mini 3 Low-Noise Propellers',price:'View at Orms',note:'Quiet flight, replacement set',url:ACC},
+   ]},
+
+  {id:'mini3pro',name:'Mini 3 Pro',cat:'Mini',isNew:false,price:'View at Orms',combo:'',color:'#378ADD',
+   url:O+'/products/dji-mini-3-pro-with-standard-controller',tagline:'Sub-249g with tri-directional sensing',
+   battery:{model:'DJI Mini 3 Series Intelligent Flight Battery',note:'Cross-compatible with Mini 3 & Mini 4 Pro (firmware sync may be required)'},
+   specs:{'Weight':'249 g','Flight Time':'34 min','Max Speed':'57 km/h','Camera Sensor':'1/1.3" CMOS','Video Res':'4K / 60fps','Obstacle Sensing':'Tri-directional','Range':'12 km','Wind Resistance':'Level 5','Storage':'microSD','Foldable':'Yes'},
+   accessories:[RCN3, RC2,
+     {cat:'battery',name:'Mini 3 Series Intelligent Flight Battery',price:'View at Orms',note:'Up to 34 min · also fits Mini 3 & Mini 4 Pro',url:BAT},
+     {cat:'battery',name:'Mini 3 Series Battery Plus',price:'View at Orms',note:'Extended · up to 47 min',url:BAT},
+     {cat:'charging',name:'Mini 3 Series Two-Way Charging Hub',price:'View at Orms',note:'3 batteries simultaneously',url:ACC},
+     {cat:'filters',name:'Mini 3 Pro ND Filter Set',price:'View at Orms',note:'ND 16/64/256 included',url:ACC},
+     {cat:'props',name:'Mini 3 Pro Low-Noise Propellers',price:'View at Orms',note:'Replacement quiet props',url:ACC},
+   ]},
+
+  {id:'mini4pro',name:'Mini 4 Pro',cat:'Mini',isNew:false,price:'R22,695',combo:'FMC Plus + RC 2',color:'#378ADD',
+   url:O+'/products/dji-mini-4-pro-drone',tagline:'Best sub-249g drone available',
+   battery:{model:'DJI Mini 3 Series Intelligent Flight Battery',note:'Accepts Mini 3 / Mini 3 Pro batteries — but Mini 4 Pro\u2019s own battery does NOT fit Mini 3 (non-Pro)'},
+   specs:{'Weight':'249 g','Flight Time':'34 min','Max Speed':'57 km/h','Camera Sensor':'1/1.3" CMOS','Video Res':'4K / 100fps','Obstacle Sensing':'Omnidirectional','Range':'20 km','Wind Resistance':'Level 5','Storage':'microSD','Foldable':'Yes'},
+   accessories:[RC2, RCN3, RCM3, Gog3,
+     {cat:'battery',name:'Mini 4 Pro Intelligent Flight Battery',price:'View at Orms',note:'Up to 34 min · also fits Mini 3 Pro',url:BAT},
+     {cat:'battery',name:'Mini 4 Pro Battery Plus',price:'View at Orms',note:'Extended · up to 45 min',url:BAT},
+     {cat:'charging',name:'Mini 4 Pro Two-Way Charging Hub',price:'View at Orms',note:'Fast charge multiple batteries',url:ACC},
+     {cat:'filters',name:'Mini 4 Pro ND Filter Set',price:'View at Orms',note:'ND 64/128/256/512 for cinematic video',url:ACC},
+     {cat:'props',name:'Mini 4 Pro Low-Noise Propellers',price:'View at Orms',note:'Replacement pair',url:ACC},
+   ]},
+
+  {id:'mini5pro',name:'Mini 5 Pro',cat:'Mini',isNew:true,price:'R18,495',combo:'Base kit · RC-N3',color:'#378ADD',
+   url:O+'/products/dji-mini-5-pro-drone-with-rc-n3-controller',tagline:'First sub-249g drone with a 1" sensor',
+   battery:{model:'DJI Intelligent Flight Battery for Mini 5 Pro',note:'New design — unique to Mini 5 Pro, NOT compatible with Mini 3/4 Pro batteries'},
+   specs:{'Weight':'249.9 g','Flight Time':'36 min (52 min with Battery Plus)','Max Speed':'65 km/h','Camera Sensor':'1" CMOS 50MP f/1.8','Video Res':'4K/120fps · 4K/60fps HDR','Obstacle Sensing':'Omni + forward LiDAR','Range':'21 km (32 km with Battery Plus)','Wind Resistance':'Level 5','Storage':'42 GB built-in','Foldable':'Yes'},
+   accessories:[RCN3, RC2,
+     {cat:'battery',name:'Intelligent Flight Battery for Mini 5 Pro',price:'View at Orms',note:'Up to 36 min flight time · 2788mAh',url:O+'/products/dji-intelligent-flight-battery-for-mini-5-pro'},
+     {cat:'battery',name:'Intelligent Flight Battery Plus for Mini 5 Pro',price:'View at Orms',note:'Extended · up to 52 min · pushes drone into next weight class',url:O+'/products/dji-intelligent-flight-battery-plus-for-mini-5-pro'},
+     {cat:'charging',name:'Two-Way Charging Hub for Mini 5 Pro',price:'View at Orms',note:'Charges up to 3 batteries · included in Fly More Combo',url:ACC},
+     {cat:'filters',name:'Mini 5 Pro ND Filter Set (ND8/32/128)',price:'View at Orms',note:'For cinematic motion blur control · included in Fly More Combo',url:ACC},
+     {cat:'props',name:'Propellers for Mini 5 Pro (Pair)',price:'View at Orms',note:'Replacement low-noise propellers',url:ACC},
+   ]},
+
+  {id:'air3',name:'DJI Air 3',cat:'Air',isNew:false,price:'View at Orms',combo:'',color:'#7F77DD',
+   url:COL,tagline:'Dual camera, pro-level performance',
+   battery:{model:'DJI Air 3 Intelligent Flight Battery',note:'Unique to Air 3 — not shared with Air 3S'},
+   specs:{'Weight':'720 g','Flight Time':'46 min','Max Speed':'75 km/h','Camera Sensor':'1/1.3" CMOS × 2','Video Res':'4K / 100fps','Obstacle Sensing':'Omnidirectional','Range':'20 km','Wind Resistance':'Level 7','Storage':'microSD','Foldable':'Yes'},
+   accessories:[RC2, RCN3, RCM3, Gog3,
+     {cat:'battery',name:'Air 3 Intelligent Flight Battery',price:'View at Orms',note:'Up to 46 min flight time',url:BAT},
+     {cat:'charging',name:'Air 3 Charging Hub',price:'View at Orms',note:'3-battery parallel charging',url:ACC},
+     {cat:'filters',name:'Air 3 ND Filter Set',price:'View at Orms',note:'ND 16/64/256/1000',url:ACC},
+     {cat:'props',name:'Air 3 Low-Noise Propellers (Pair)',price:'View at Orms',note:'Quiet replacement set',url:ACC},
+   ]},
+
+  {id:'air3s',name:'DJI Air 3S',cat:'Air',isNew:false,price:'R27,995',combo:'FMC + RC 2',color:'#7F77DD',
+   url:O+'/products/dji-air-3s-drone-fly-more-combo-with-rc-2-remote-controller',tagline:'1" sensor in a compact body',
+   battery:{model:'DJI Air 3S Intelligent Flight Battery',note:'Unique to Air 3S — not shared with Air 3'},
+   specs:{'Weight':'723 g','Flight Time':'45 min','Max Speed':'75 km/h','Camera Sensor':'1" CMOS','Video Res':'4K / 120fps','Obstacle Sensing':'Omnidirectional','Range':'20 km','Wind Resistance':'Level 7','Storage':'microSD','Foldable':'Yes'},
+   accessories:[RC2, RCN3, RCpro2,
+     {cat:'battery',name:'Air 3S Intelligent Flight Battery',price:'R3,695',note:'Up to 45 min flight time',url:BAT},
+     {cat:'charging',name:'Air 3S Charging Hub',price:'View at Orms',note:'3-battery parallel charging',url:ACC},
+     {cat:'lens',name:'Air 3S Wide-Angle Lens',price:'R1,895',note:'84° FOV · expands landscape coverage',url:O+'/products/dji-air-3s-wide-angle-lens'},
+     {cat:'filters',name:'Air 3S ND Filter Set (ND8/32/128)',price:'View at Orms',note:'For cinematic motion blur control',url:ACC},
+     {cat:'props',name:'Air 3S Low-Noise Propellers (Pair)',price:'View at Orms',note:'Quiet replacement props',url:ACC},
+   ]},
+
+  {id:'mv3c',name:'Mavic 3 Classic',cat:'Mavic',isNew:false,price:'View at Orms',combo:'',color:'#D85A30',
+   url:COL,tagline:'Hasselblad color science, value pick',
+   battery:{model:'DJI Mavic 3 Series Intelligent Flight Battery',note:'Shared with Mavic 3 Pro & Mavic 3 Pro Cine'},
+   specs:{'Weight':'749 g','Flight Time':'46 min','Max Speed':'75 km/h','Camera Sensor':'4/3" CMOS (Hasselblad)','Video Res':'5.1K / 50fps','Obstacle Sensing':'Omnidirectional','Range':'15 km','Wind Resistance':'Level 6','Storage':'microSD','Foldable':'Yes'},
+   accessories:[RCRC,
+     {cat:'battery',name:'Mavic 3 Series Intelligent Flight Battery',price:'View at Orms',note:'Up to 46 min · also fits Mavic 3 Pro',url:BAT},
+     {cat:'kit',name:'Fly More Kit for Mavic 3',price:'R11,995',note:'2 extra batteries + hub + ND filters + bag',url:O+'/products/dji-fly-more-kit-for-mavic-3'},
+     {cat:'props',name:'Low-Noise Propellers for Mavic 3 (Pair)',price:'R575',note:'Quiet replacement set',url:O+'/products/dji-low-noise-propellers-for-mavic-3-pair'},
+     {cat:'filters',name:'Mavic 3 ND Filter Set',price:'View at Orms',note:'ND 64/128/256/512',url:ACC},
+   ]},
+
+  {id:'mv3pro',name:'Mavic 3 Pro',cat:'Mavic',isNew:false,price:'R63,995',combo:'FMC + DJI RC',color:'#D85A30',
+   url:O+'/products/dji-mavic-3-pro-drone-with-fly-more-combo-with-dji-rc-remote',tagline:'Triple Hasselblad cameras',
+   battery:{model:'DJI Mavic 3 Series Intelligent Flight Battery',note:'Shared with Mavic 3 Classic & Mavic 3 Pro Cine'},
+   specs:{'Weight':'958 g','Flight Time':'43 min','Max Speed':'75 km/h','Camera Sensor':'4/3" CMOS + 2× tele','Video Res':'5.1K / 50fps','Obstacle Sensing':'Omnidirectional','Range':'15 km','Wind Resistance':'Level 6','Storage':'microSD','Foldable':'Yes'},
+   accessories:[RCRC,
+     {cat:'battery',name:'Mavic 3 Series Intelligent Flight Battery',price:'View at Orms',note:'Up to 43 min · also fits Mavic 3 Classic',url:BAT},
+     {cat:'kit',name:'Fly More Kit for Mavic 3',price:'R11,995',note:'2 extra batteries + hub + ND filters + bag',url:O+'/products/dji-fly-more-kit-for-mavic-3'},
+     {cat:'props',name:'Low-Noise Propellers for Mavic 3 (Pair)',price:'R575',note:'Quiet replacement set',url:O+'/products/dji-low-noise-propellers-for-mavic-3-pair'},
+   ]},
+
+  {id:'mv4pro',name:'Mavic 4 Pro',cat:'Mavic',isNew:true,price:'R61,995',combo:'FMC + RC 2',color:'#D85A30',
+   url:O+'/products/dji-mavic-4-pro-drone-with-fly-more-combo-with-rc-2-remote-controller',tagline:'360° Infinity Gimbal, 100MP Hasselblad triple-cam',
+   battery:{model:'DJI Mavic 4 Pro Intelligent Flight Battery',note:'New design — NOT compatible with Mavic 3 series batteries'},
+   specs:{'Weight':'~860 g','Flight Time':'~51 min','Max Speed':'75 km/h','Camera Sensor':'4/3" Hasselblad + 2× tele','Video Res':'6K / 60fps HDR','Obstacle Sensing':'Omni + front LiDAR','Range':'30 km (O4+)','Wind Resistance':'Level 7','Storage':'microSD','Foldable':'Yes'},
+   accessories:[RC2, RCpro2,
+     {cat:'battery',name:'Mavic 4 Pro Intelligent Flight Battery',price:'View at Orms',note:'~51 min flight time',url:BAT},
+     {cat:'charging',name:'Mavic 4 Pro Charging Hub',price:'View at Orms',note:'Multi-battery charging station',url:ACC},
+     {cat:'props',name:'Propellers for Mavic 4 Pro (Pair)',price:'R645',note:'Precisely balanced for max efficiency',url:O+'/products/dji-propellers-for-mavic-4-pro-pair'},
+     {cat:'props',name:'Propeller Guard for Mavic 4 Pro',price:'R1,595',note:'Protective guard for indoor / close flights',url:O+'/products/dji-propeller-guard-for-mavic-4-pro'},
+   ]},
+
+  {id:'avata2',name:'DJI Avata 2',cat:'FPV',isNew:false,price:'R19,895',combo:'Fly More Combo',color:'#C45090',
+   url:O+'/products/dji-avata-2',tagline:'Immersive first-person flying',
+   battery:{model:'DJI Avata 2 Intelligent Flight Battery',note:'Unique to Avata 2 — not shared with Avata 360'},
+   specs:{'Weight':'377 g','Flight Time':'23 min','Max Speed':'127 km/h','Camera Sensor':'1/1.3" CMOS','Video Res':'4K / 60fps','Obstacle Sensing':'Downward only','Range':'13 km','Wind Resistance':'Level 5','Storage':'microSD','Foldable':'No'},
+   accessories:[RCM3, RCFPV, GogN3, Gog3,
+     {cat:'battery',name:'Avata 2 Intelligent Flight Battery',price:'View at Orms',note:'Up to 23 min flight time',url:BAT},
+     {cat:'props',name:'Avata 2 Propeller Guard',price:'View at Orms',note:'Built-in type · replacement part',url:ACC},
+   ]},
+
+  {id:'avata360',name:'Avata 360',cat:'FPV',isNew:true,price:'R18,995',combo:'FMC + RC 2',color:'#C45090',
+   url:O+'/products/dji-avata-360-fly-more-combo-with-rc-2-remote-controller',tagline:'8K/60fps 360° immersive FPV',
+   battery:{model:'DJI Avata 360 Intelligent Flight Battery',note:'Unique to Avata 360 — not shared with Avata 2'},
+   specs:{'Weight':'~700 g','Flight Time':'23 min','Max Speed':'~127 km/h','Camera Sensor':'1"-equiv dual fisheye','Video Res':'8K / 60fps HDR · 360°','Obstacle Sensing':'Omnidirectional','Range':'20 km (O4+)','Wind Resistance':'Level 5','Storage':'42 GB built-in','Foldable':'No'},
+   accessories:[RCN3, RC2, RCM3, RCFPV, GogN3, Gog3,
+     {cat:'battery',name:'Avata 360 Intelligent Flight Battery',price:'View at Orms',note:'Up to 23 min flight time',url:BAT},
+   ]},
+
+  {id:'inspire3',name:'DJI Inspire 3',cat:'Cinema',isNew:false,price:'View at Orms',combo:'',color:'#BA7517',
+   url:O+'/products/dji-inspire-3',tagline:'Full-frame cinema powerhouse',
+   battery:{model:'DJI TB51 Intelligent Flight Battery',note:'Unique to Inspire 3 — dual-battery setup required'},
+   specs:{'Weight':'4,020 g','Flight Time':'28 min','Max Speed':'94 km/h','Camera Sensor':'Full-frame (Zenmuse X9)','Video Res':'8K / 75fps RAW','Obstacle Sensing':'Omnidirectional','Range':'15 km','Wind Resistance':'Level 7','Storage':'CFexpress','Foldable':'No'},
+   accessories:[RCPlus,
+     {cat:'lens',name:'Zenmuse X9-8K Air Camera',price:'View at Orms',note:'Full-frame 8K cinema camera · RAW output',url:ACC},
+     {cat:'lens',name:'Zenmuse X9-6K Camera',price:'View at Orms',note:'S35 6K cinema camera option',url:ACC},
+     {cat:'battery',name:'Inspire 3 TB51 Battery',price:'View at Orms',note:'Up to 28 min · intelligent flight battery (2 required per flight)',url:BAT},
+     {cat:'charging',name:'BS65 Intelligent Charging Station',price:'View at Orms',note:'Multi-battery charging hub',url:ACC},
+     {cat:'filters',name:'Zenmuse X9 ND Filter Set',price:'View at Orms',note:'Cinema-grade ND filters',url:ACC},
+   ]},
+];
+
+const ALL_CATS = ['All','Entry','Lito','Mini','Air','Mavic','FPV','Cinema'];
+const SK = ['Weight','Flight Time','Max Speed','Camera Sensor','Video Res','Obstacle Sensing','Range','Wind Resistance','Storage','Foldable'];
+const ACC_CAT_LABELS = {remote:'Remote',goggles:'Goggles',battery:'Battery',charging:'Charging',props:'Propellers',filters:'ND Filters',lens:'Lens / Camera',kit:'Fly More Kit'};
+
+const RETAILERS = [
+  {name:'Takealot',color:'#1A8F3C',search:q=>`https://www.takealot.com/all?qsearch=${encodeURIComponent(q)}`},
+  {name:'Cameraland',color:'#C45090',search:q=>`https://cameraland.co.za/search?q=${encodeURIComponent(q)}`},
+  {name:'Outdoorphoto',color:'#7F77DD',search:q=>`https://www.outdoorphoto.co.za/search?q=${encodeURIComponent(q)}`},
+  {name:'PriceCheck (aggregator)',color:'#3A9EFF',search:q=>`https://www.pricecheck.co.za/search?search=${encodeURIComponent(q)}`},
+];
+
+function renderCompare(d){
+  let h = `<div class="cmp-note">These are static links, not live prices — this page can't fetch other sites' prices automatically. Each button opens a real-time search for "${d.name}" on that retailer so you can compare against the Orms price above (${d.price}) yourself.</div>`;
+  h += '<div class="cmp-grid">';
+  for(const r of RETAILERS){
+    h += `<a class="cmp-card" href="${r.search(d.name)}" target="_blank">
+      <span class="cmp-dot" style="background:${r.color}"></span>
+      <span class="cmp-name">${r.name}</span>
+      <span class="cmp-go">Search ↗</span>
+    </a>`;
+  }
+  h += '</div>';
+  return h;
+}
+
+let state = {mode:'browse', cat:'All', viewing:null, viewTab:{}, compareIds:[]};
+
+function render(){
+  const app  = document.getElementById('app');
+  const list = state.cat==='All' ? DRONES : DRONES.filter(d=>d.cat===state.cat);
+  const cmpd = state.compareIds.map(id=>DRONES.find(d=>d.id===id)).filter(Boolean);
+  let h = '';
+
+  h += `<div class="toolbar">
+    <div class="cats">${ALL_CATS.map(c=>`<button class="cat-btn${state.cat===c?' active':''}" onclick="setCat('${c}')">${c}</button>`).join('')}</div>
+    <button class="cmp-btn${state.mode==='compare'?' active':''}" onclick="toggleMode()">⇄ Compare${state.compareIds.length?` (${state.compareIds.length})`:''}</button>
+  </div>`;
+
+  h += '<div class="grid">';
+  for(const d of list){
+    const isSel = state.compareIds.includes(d.id);
+    const isV   = state.viewing===d.id && state.mode==='browse';
+    const maxed = state.compareIds.length>=3 && !isSel;
+    let cls = 'card'+(isV?' viewing':'')+(isSel?' selected':'')+(state.mode==='compare'&&maxed?' dim':'');
+    h += `<div class="${cls}" onclick="${state.mode==='compare'&&maxed?'':` cardClick('${d.id}')`}">
+      ${state.mode==='compare'?`<div class="sel-badge${isSel?' on':''}">${isSel?'✓':'+'}</div>`:''}
+      <div class="dot" style="background:${d.color}"></div>
+      <div class="card-name">${d.name}${d.isNew?'<span class="new">NEW</span>':''}</div>
+      <div class="card-cat">${d.cat}</div>
+      <div class="card-price">${d.price}</div>
+      ${d.combo?`<div class="card-combo">${d.combo}</div>`:''}
+    </div>`;
+  }
+  h += '</div>';
+
+  if(state.mode==='browse' && state.viewing){
+    const d = DRONES.find(x=>x.id===state.viewing);
+    if(d){
+      const tab = state.viewTab[d.id]||'specs';
+      h += `<div class="panel">
+        <div class="panel-top">
+          <div class="panel-head">
+            <div>
+              <div class="panel-title"><div class="dot" style="background:${d.color};width:11px;height:11px"></div>${d.name}${d.isNew?'<span class="new">NEW</span>':''}</div>
+              <div class="panel-sub">${d.tagline}</div>
+              <div class="price-big">${d.price}</div>
+              ${d.combo?`<div class="price-sub">${d.combo}</div>`:''}
+              <a class="orms-btn" href="${d.url}" target="_blank">↗ &nbsp;View on Orms Direct</a>
+            </div>
+            <button class="close-btn" onclick="closePanel()">✕ Close</button>
+          </div>
+          <div class="tabs">
+            <div class="tab${tab==='specs'?' active':''}" onclick="setTab('${d.id}','specs')">Specs</div>
+            <div class="tab${tab==='acc'?' active':''}" onclick="setTab('${d.id}','acc')">Accessories (${d.accessories.length})</div>
+            <div class="tab${tab==='compare'?' active':''}" onclick="setTab('${d.id}','compare')">Compare Prices</div>
+          </div>
+        </div>
+        <div class="tab-body">`;
+
+      if(tab==='specs'){
+        h += `<table class="spec-tbl">
+          <tr class="battery-row"><td>Battery Model</td><td>${d.battery.model}<span class="battery-note">${d.battery.note}</span></td></tr>
+          ${SK.map(k=>`<tr><td>${k}</td><td>${d.specs[k]||'—'}</td></tr>`).join('')}
+        </table>`;
+      } else if(tab==='compare'){
+        h += renderCompare(d);
+      } else {
+        const groups = {};
+        for(const a of d.accessories){ if(!groups[a.cat]) groups[a.cat]=[]; groups[a.cat].push(a); }
+        const order = ['remote','goggles','battery','charging','kit','props','filters','lens'];
+        let hasAny = false;
+        for(const cat of order){
+          if(!groups[cat]) continue;
+          hasAny = true;
+          h += `<div class="acc-section"><div class="acc-section-title">${ACC_CAT_LABELS[cat]||cat}</div><div class="acc-grid">`;
+          for(const a of groups[cat]){
+            h += `<div class="acc-card">
+              <span class="acc-cat cat-${a.cat}">${ACC_CAT_LABELS[a.cat]||a.cat}</span>
+              <div class="acc-name">${a.name}</div>
+              ${a.note?`<div class="acc-note">${a.note}</div>`:''}
+              <div class="acc-foot"><span class="acc-price">${a.price}</span><a class="acc-link" href="${a.url}" target="_blank">View at Orms ↗</a></div>
+            </div>`;
+          }
+          h += '</div></div>';
+        }
+        if(!hasAny) h += '<div class="no-acc">No accessories listed for this drone yet.</div>';
+      }
+      h += '</div></div>';
+    }
+  }
+
+  if(state.mode==='compare'){
+    if(cmpd.length<2){
+      h += `<div class="panel"><div class="hint"><div class="hint-icon">⇄</div><div>Select 2 or 3 drones above to compare specs side by side</div></div></div>`;
+    } else {
+      h += `<div class="panel"><div class="panel-top">
+        <div class="panel-head">
+          <div><div class="panel-title" style="font-size:17px">Comparing ${cmpd.length} drones</div><div class="panel-sub">Side-by-side specs &amp; Orms pricing</div></div>
+          <button class="close-btn" onclick="clearCmp()">🗑 Clear</button>
+        </div></div>
+        <div class="tab-body"><div class="cmp-wrap"><table class="cmp-tbl">
+        <thead><tr><th>Spec</th>${cmpd.map(d=>`<th><span style="color:${d.color}">${d.name}</span>${d.isNew?'<span class="new">NEW</span>':''}</th>`).join('')}</tr></thead>
+        <tbody>
+        <tr class="price-row"><td>Orms Price</td>${cmpd.map(d=>`<td><a class="price-link" href="${d.url}" target="_blank">${d.price} ↗</a>${d.combo?`<div style="font-size:10px;color:var(--text3);margin-top:2px">${d.combo}</div>`:''}</td>`).join('')}</tr>
+        <tr><td>Battery Model</td>${cmpd.map(d=>`<td>${d.battery.model}</td>`).join('')}</tr>
+        ${SK.map(k=>`<tr><td>${k}</td>${cmpd.map(d=>`<td>${d.specs[k]||'—'}</td>`).join('')}</tr>`).join('')}
+        </tbody></table></div></div></div>`;
+    }
+  }
+
+  app.innerHTML = h;
+}
+
+function setCat(c)    {state.cat=c; render()}
+function closePanel() {state.viewing=null; render()}
+function clearCmp()   {state.compareIds=[]; render()}
+function setTab(id,t) {state.viewTab[id]=t; render()}
+function toggleMode() {state.mode=state.mode==='browse'?'compare':'browse'; state.viewing=null; render()}
+function cardClick(id){
+  if(state.mode==='compare'){
+    if(state.compareIds.includes(id)) state.compareIds=state.compareIds.filter(x=>x!==id);
+    else if(state.compareIds.length<3) state.compareIds.push(id);
+  } else {
+    state.viewing = state.viewing===id ? null : id;
+  }
+  render();
+}
+
+render();
+</script>
+</body>
+</html>
