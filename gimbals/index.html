@@ -157,7 +157,7 @@
 <main><div id="app"></div></main>
 
 <footer>
-  Prices sourced from <a href="https://www.ormsdirect.co.za" target="_blank">ormsdirect.co.za</a> · This is a static file and cannot refresh prices automatically — always confirm via the Orms links before purchasing · Prices shown are for the base/standalone configuration unless a combo is noted · Specs marked ~ are estimates · Battery type (built-in vs swappable grip) noted per product
+  Prices sourced from <a href="https://www.ormsdirect.co.za" target="_blank">ormsdirect.co.za</a> · Prices sync live from Orms Direct on page load and via the Refresh button — if sync fails, last-saved prices are shown instead · always confirm via the Orms links before purchasing · Prices shown are for the base/standalone configuration unless a combo is noted · Specs marked ~ are estimates · Battery type (built-in vs swappable grip) noted per product
 </footer>
 
 <script>
@@ -435,18 +435,37 @@ function extractHandle(url){
   return m ? m[1] : null;
 }
 function formatRand(n){
-  return 'R'+Math.round(n).toLocaleString('en-ZA');
+  return 'R'+Math.round(n).toLocaleString('en-US');
 }
-async function fetchLivePrice(handle){
+function pickVariant(variants, hint){
+  const priced = variants.filter(v=>{ const p=parseFloat(v.price); return !isNaN(p) && p>0; });
+  if(!priced.length) return null;
+  const available = priced.filter(v=>v.available!==false);
+  const pool = available.length ? available : priced;
+  if(hint){
+    const words = hint.toLowerCase().split(/[^a-z0-9]+/).filter(w=>w.length>2);
+    let best=null, bestScore=0;
+    for(const v of pool){
+      const t = (v.title||'').toLowerCase();
+      const score = words.reduce((s,w)=> t.includes(w) ? s+1 : s, 0);
+      if(score>bestScore){ bestScore=score; best=v; }
+    }
+    if(best) return best;
+  }
+  return pool.reduce((a,b)=> parseFloat(a.price)<=parseFloat(b.price) ? a : b);
+}
+async function fetchLivePrice(handle, hint){
+  const controller = new AbortController();
+  const timeout = setTimeout(()=>controller.abort(), 8000);
   try{
-    const res = await fetch(`https://www.ormsdirect.co.za/products/${handle}.json?_=${Date.now()}`, {mode:'cors', cache:'no-store'});
+    const res = await fetch(`https://www.ormsdirect.co.za/products/${handle}.json?_=${Date.now()}`, {mode:'cors', cache:'no-store', signal:controller.signal});
     if(!res.ok) return null;
     const data = await res.json();
     const variants = (data.product && data.product.variants) || [];
-    const prices = variants.map(v=>parseFloat(v.price)).filter(p=>!isNaN(p) && p>0);
-    if(!prices.length) return null;
-    return formatRand(Math.min(...prices));
+    const picked = pickVariant(variants, hint);
+    return picked ? formatRand(parseFloat(picked.price)) : null;
   } catch(e){ return null; }
+  finally{ clearTimeout(timeout); }
 }
 async function syncLivePrices(){
   const bar = document.getElementById('freshnessBar');
@@ -460,7 +479,7 @@ async function syncLivePrices(){
     const h = extractHandle(d.url);
     if(h){
       attempted++;
-      tasks.push(fetchLivePrice(h).then(p=>{ if(p){ d.price = p; updated++; } }));
+      tasks.push(fetchLivePrice(h, d.combo).then(p=>{ if(p){ d.price = p; updated++; } }));
     }
     for(const a of d.accessories||[]){
       const ah = extractHandle(a.url);

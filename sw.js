@@ -27,6 +27,8 @@ self.addEventListener('activate', function(event){
 
 self.addEventListener('fetch', function(event){
   if (event.request.method !== 'GET') return;
+  var url = new URL(event.request.url);
+  if (url.origin !== self.location.origin) return;
   event.respondWith(
     caches.match(event.request).then(function(cached){
       var fetchPromise = fetch(event.request).then(function(response){
