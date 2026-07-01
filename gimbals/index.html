@@ -36,6 +36,9 @@
   .refresh-btn{background:transparent;border:1px solid currentColor;border-radius:20px;padding:2px 10px;font-size:11px;color:inherit;cursor:pointer;font-family:inherit;margin-left:4px}
   .refresh-btn:hover{opacity:.8}
   .refresh-btn:disabled{opacity:.5;cursor:default}
+  .price-badge{display:inline-block;width:6px;height:6px;border-radius:50%;margin-left:5px;vertical-align:middle;cursor:help}
+  .price-badge.live{background:var(--green);box-shadow:0 0 4px var(--green)}
+  .price-badge.snap{background:var(--accent)}
 
   main{max-width:1200px;margin:0 auto;padding:24px 20px 60px}
 
@@ -152,7 +155,7 @@
   <a class="orms-brand" href="https://www.ormsdirect.co.za" target="_blank"><img src="https://www.ormsdirect.co.za/cdn/shop/files/orms-logo-social-media.webp?v=1756726421" alt="Orms Direct logo"><span>Prices via Orms Direct</span></a>
 </header>
 
-<div class="freshness-bar" id="freshnessBar">⏳ Syncing live prices from Orms Direct… <button class="refresh-btn" id="refreshBtn" onclick="syncLivePrices()" disabled>Refresh</button></div>
+<div class="freshness-bar" id="freshnessBar" role="status" aria-live="polite">⏳ Syncing live prices from Orms Direct… <button class="refresh-btn" id="refreshBtn" onclick="syncLivePrices()" disabled>Refresh</button></div>
 
 <main><div id="app"></div></main>
 
@@ -308,6 +311,13 @@ function renderCompare(d){
 
 let state = {mode:'browse', cat:'All', viewing:null, viewTab:{}, compareIds:[]};
 
+function priceBadge(obj){
+  if(obj.priceSource==='live') return '<span class="price-badge live" title="Live price — verified this session"></span>';
+  if(obj.priceSource==='snapshot') return `<span class="price-badge snap" title="Synced by daily automated check${obj.priceAt?(' · '+obj.priceAt):''}"></span>`;
+  if(obj.priceSource==='cached') return '<span class="price-badge snap" title="From your last visit to this page"></span>';
+  return '';
+}
+
 function render(){
   const app  = document.getElementById('app');
   const list = state.cat==='All' ? GIMBALS : GIMBALS.filter(d=>d.cat===state.cat);
@@ -330,7 +340,7 @@ function render(){
       <div class="dot" style="background:${d.color}"></div>
       <div class="card-name">${d.name}${d.isNew?'<span class="new">NEW</span>':''}</div>
       <div class="card-cat">${d.cat}</div>
-      <div class="card-price">${d.price}</div>
+      <div class="card-price">${d.price}${priceBadge(d)}</div>
       ${d.combo?`<div class="card-combo">${d.combo}</div>`:''}
     </div>`;
   }
@@ -346,7 +356,7 @@ function render(){
             <div>
               <div class="panel-title"><div class="dot" style="background:${d.color};width:11px;height:11px"></div>${d.name}${d.isNew?'<span class="new">NEW</span>':''}</div>
               <div class="panel-sub">${d.tagline}</div>
-              <div class="price-big">${d.price}</div>
+              <div class="price-big">${d.price}${priceBadge(d)}</div>
               ${d.combo?`<div class="price-sub">${d.combo}</div>`:''}
               <a class="orms-btn" href="${d.url}" target="_blank">↗ &nbsp;View on Orms Direct</a>
             </div>
@@ -381,7 +391,7 @@ function render(){
               <span class="acc-cat cat-${a.cat}">${ACC_CAT_LABELS[a.cat]||a.cat}</span>
               <div class="acc-name">${a.name}</div>
               ${a.note?`<div class="acc-note">${a.note}</div>`:''}
-              <div class="acc-foot"><span class="acc-price">${a.price}</span><a class="acc-link" href="${a.url}" target="_blank">View at Orms ↗</a></div>
+              <div class="acc-foot"><span class="acc-price">${a.price}${priceBadge(a)}</span><a class="acc-link" href="${a.url}" target="_blank">View at Orms ↗</a></div>
             </div>`;
           }
           h += '</div></div>';
@@ -404,7 +414,7 @@ function render(){
         <div class="tab-body"><div class="cmp-wrap"><table class="cmp-tbl">
         <thead><tr><th>Spec</th>${cmpd.map(d=>`<th><span style="color:${d.color}">${d.name}</span>${d.isNew?'<span class="new">NEW</span>':''}</th>`).join('')}</tr></thead>
         <tbody>
-        <tr class="price-row"><td>Orms Price</td>${cmpd.map(d=>`<td><a class="price-link" href="${d.url}" target="_blank">${d.price} ↗</a>${d.combo?`<div style="font-size:10px;color:var(--text3);margin-top:2px">${d.combo}</div>`:''}</td>`).join('')}</tr>
+        <tr class="price-row"><td>Orms Price</td>${cmpd.map(d=>`<td><a class="price-link" href="${d.url}" target="_blank">${d.price} ↗</a>${priceBadge(d)}${d.combo?`<div style="font-size:10px;color:var(--text3);margin-top:2px">${d.combo}</div>`:''}</td>`).join('')}</tr>
         <tr><td>Battery</td>${cmpd.map(d=>`<td>${d.battery.model}</td>`).join('')}</tr>
         ${SK.map(k=>`<tr><td>${k}</td>${cmpd.map(d=>`<td>${d.specs[k]||'—'}</td>`).join('')}</tr>`).join('')}
         </tbody></table></div></div></div>`;
@@ -467,29 +477,88 @@ async function fetchLivePrice(handle, hint){
   } catch(e){ return null; }
   finally{ clearTimeout(timeout); }
 }
+function collectTargets(){
+  const targets = [];
+  for(const d of GIMBALS){
+    const h = extractHandle(d.url);
+    if(h) targets.push({obj:d, handle:h, hint:d.combo});
+    for(const a of d.accessories||[]){
+      const ah = extractHandle(a.url);
+      if(ah) targets.push({obj:a, handle:ah, hint:null});
+    }
+  }
+  return targets;
+}
+
+const CACHE_KEY = 'orms-deck:gimbals:prices:v1';
+const CACHE_MAX_AGE_MS = 7*24*60*60*1000;
+
+function loadCache(){
+  try{
+    const raw = localStorage.getItem(CACHE_KEY);
+    if(!raw) return null;
+    const data = JSON.parse(raw);
+    if(!data || !data.prices || typeof data.ts!=='number') return null;
+    if(Date.now()-data.ts > CACHE_MAX_AGE_MS) return null;
+    return data;
+  } catch(e){ return null; }
+}
+function saveCache(targets){
+  try{
+    const prices = {};
+    for(const t of targets){ if(t.obj.priceSource==='live') prices[t.handle] = t.obj.price; }
+    localStorage.setItem(CACHE_KEY, JSON.stringify({ts:Date.now(), prices}));
+  } catch(e){ /* storage unavailable or full — safe to ignore */ }
+}
+function hydrateFromCache(targets){
+  const cache = loadCache();
+  if(!cache) return false;
+  let applied = false;
+  for(const t of targets){
+    const p = cache.prices[t.handle];
+    if(p){ t.obj.price = p; t.obj.priceSource = 'cached'; applied = true; }
+  }
+  return applied;
+}
+async function hydrateFromSnapshot(targets){
+  try{
+    const res = await fetch('../prices-snapshot.json', {cache:'no-store'});
+    if(!res.ok) return false;
+    const snap = await res.json();
+    const products = snap.products || {};
+    const genAt = snap.generatedAt ? new Date(snap.generatedAt).toLocaleString('en-ZA',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'}) : null;
+    let applied = false;
+    for(const t of targets){
+      if(t.obj.priceSource==='live') continue;
+      const entry = products[t.handle];
+      if(!entry || !entry.variants) continue;
+      const picked = pickVariant(entry.variants, t.hint);
+      if(picked){
+        t.obj.price = formatRand(parseFloat(picked.price));
+        t.obj.priceSource = 'snapshot';
+        t.obj.priceAt = genAt;
+        applied = true;
+      }
+    }
+    return applied;
+  } catch(e){ return false; }
+}
 async function syncLivePrices(){
   const bar = document.getElementById('freshnessBar');
   if(!bar) return;
   bar.className = 'freshness-bar';
   bar.innerHTML = '⏳ Syncing live prices from Orms Direct… <button class="refresh-btn" disabled>Refresh</button>';
 
+  const targets = collectTargets();
   let attempted = 0, updated = 0;
-  const tasks = [];
-  for(const d of GIMBALS){
-    const h = extractHandle(d.url);
-    if(h){
-      attempted++;
-      tasks.push(fetchLivePrice(h, d.combo).then(p=>{ if(p){ d.price = p; updated++; } }));
-    }
-    for(const a of d.accessories||[]){
-      const ah = extractHandle(a.url);
-      if(ah){
-        attempted++;
-        tasks.push(fetchLivePrice(ah).then(p=>{ if(p){ a.price = p; updated++; } }));
-      }
-    }
-  }
+  const tasks = targets.map(t=>{
+    attempted++;
+    return fetchLivePrice(t.handle, t.hint).then(p=>{
+      if(p){ t.obj.price = p; t.obj.priceSource = 'live'; updated++; }
+    });
+  });
   await Promise.allSettled(tasks);
+  saveCache(targets);
   render();
 
   const bar2 = document.getElementById('freshnessBar');
@@ -511,7 +580,12 @@ async function syncLivePrices(){
 }
 
 render();
-syncLivePrices();
+(async function init(){
+  const targets = collectTargets();
+  if(hydrateFromCache(targets)) render();
+  if(await hydrateFromSnapshot(targets)) render();
+  syncLivePrices();
+})();
 </script>
 </body>
 </html>
