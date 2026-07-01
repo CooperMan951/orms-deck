@@ -313,7 +313,6 @@ let state = {mode:'browse', cat:'All', viewing:null, viewTab:{}, compareIds:[]};
 
 function priceBadge(obj){
   if(obj.priceSource==='live') return '<span class="price-badge live" title="Live price — verified this session"></span>';
-  if(obj.priceSource==='snapshot') return `<span class="price-badge snap" title="Synced by daily automated check${obj.priceAt?(' · '+obj.priceAt):''}"></span>`;
   if(obj.priceSource==='cached') return '<span class="price-badge snap" title="From your last visit to this page"></span>';
   return '';
 }
@@ -520,29 +519,6 @@ function hydrateFromCache(targets){
   }
   return applied;
 }
-async function hydrateFromSnapshot(targets){
-  try{
-    const res = await fetch('../prices-snapshot.json', {cache:'no-store'});
-    if(!res.ok) return false;
-    const snap = await res.json();
-    const products = snap.products || {};
-    const genAt = snap.generatedAt ? new Date(snap.generatedAt).toLocaleString('en-ZA',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'}) : null;
-    let applied = false;
-    for(const t of targets){
-      if(t.obj.priceSource==='live') continue;
-      const entry = products[t.handle];
-      if(!entry || !entry.variants) continue;
-      const picked = pickVariant(entry.variants, t.hint);
-      if(picked){
-        t.obj.price = formatRand(parseFloat(picked.price));
-        t.obj.priceSource = 'snapshot';
-        t.obj.priceAt = genAt;
-        applied = true;
-      }
-    }
-    return applied;
-  } catch(e){ return false; }
-}
 async function syncLivePrices(){
   const bar = document.getElementById('freshnessBar');
   if(!bar) return;
@@ -583,7 +559,6 @@ render();
 (async function init(){
   const targets = collectTargets();
   if(hydrateFromCache(targets)) render();
-  if(await hydrateFromSnapshot(targets)) render();
   syncLivePrices();
 })();
 </script>
