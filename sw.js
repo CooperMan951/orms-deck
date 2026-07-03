@@ -1,4 +1,4 @@
-var CACHE = 'orms-deck-v1';
+var CACHE = 'orms-deck-v2';
 var ASSETS = [
   './',
   './index.html',
@@ -29,16 +29,18 @@ self.addEventListener('fetch', function(event){
   if (event.request.method !== 'GET') return;
   var url = new URL(event.request.url);
   if (url.origin !== self.location.origin) return;
+  // Network-first: always try to get the latest version. Only fall back to
+  // the cached copy if the network request fails (e.g. offline), so updates
+  // to the site show up immediately without needing a manual hard refresh.
   event.respondWith(
-    caches.match(event.request).then(function(cached){
-      var fetchPromise = fetch(event.request).then(function(response){
-        if (response && response.status === 200 && response.type === 'basic'){
-          var copy = response.clone();
-          caches.open(CACHE).then(function(cache){ cache.put(event.request, copy); });
-        }
-        return response;
-      }).catch(function(){ return cached; });
-      return cached || fetchPromise;
+    fetch(event.request).then(function(response){
+      if (response && response.status === 200 && response.type === 'basic'){
+        var copy = response.clone();
+        caches.open(CACHE).then(function(cache){ cache.put(event.request, copy); });
+      }
+      return response;
+    }).catch(function(){
+      return caches.match(event.request);
     })
   );
 });
